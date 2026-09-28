@@ -78,8 +78,9 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
             button(inv, 33, Material.BARRIER, "§cClose");
             button(inv, 20, Material.COMPARATOR, "§eSettings", "§7Personal settings");
         } else if (title.equals(DUELS)) {
-            button(inv, 10, Material.DIAMOND_SWORD, "§bJoin Queue", "§7Uses the default queue.");
-            button(inv, 13, Material.PAPER, "§fDuel Player", "§7Use /duel <player>.");
+            button(inv, 10, Material.DIAMOND_SWORD, "§bUnranked Queue", "§7Join the standard matchmaking queue.", "§8Click to join.");
+            button(inv, 11, Material.NETHER_STAR, "§dRanked Queue", "§7Match by ELO.", "§8Click to join.");
+            button(inv, 13, Material.PAPER, "§fDuel Player", "§7Send a direct duel request.");
             button(inv, 16, Material.ENDER_EYE, "§dSpectate", "§7Use /spectate <player>.");
             button(inv, 31, Material.ARROW, "§7Back");
             button(inv, 33, Material.BARRIER, "§cClose");
@@ -89,7 +90,7 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
             button(inv, 31, Material.ARROW, "§7Back");
             button(inv, 33, Material.BARRIER, "§cClose");
         } else if (title.equals(SETTINGS)) {
-            button(inv, 10, Material.LIME_DYE, "§aالاتصال", "§7Connected to server", "§7Status: §aEnabled");
+            button(inv, 10, Material.LIME_DYE, "§aConnection", "§7Connected to server", "§7Status: §aOnline");
             for (int i = 0; i < SETTINGS_LIST.size(); i++) {
                 Setting s = SETTINGS_LIST.get(i);
                 boolean value = getSetting(p, s);
@@ -182,7 +183,8 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
             }
         } else if (title.equals(DUELS)) {
             switch (e.getRawSlot()) {
-                case 10 -> command(p, "queue");
+                case 10 -> command(p, "queue sword");
+                case 11 -> command(p, "queue ranked sword");
                 case 13 -> command(p, "duel");
                 case 16 -> command(p, "spectate");
                 case 31 -> open(p, MAIN);
