@@ -39,16 +39,16 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
     private record Setting(String key, Material material, String label, boolean defaultValue, String on, String off) {}
 
     private static final List<Setting> SETTINGS_LIST = List.of(
-            new Setting("duel_requests", Material.IRON_SWORD, "طلبات المبارزة", true, "للجميع", "متوقف"),
-            new Setting("party_invites", Material.CAKE, "دعوات الحفلة", true, "للجميع", "متوقف"),
-            new Setting("explosion_effects", Material.WIND_CHARGE, "تأثيرات الانفجار", false, "مفعل", "متوقف"),
-            new Setting("kit_profile", Material.BOOK, "ملف الكيت", false, "ظاهر", "مخفي"),
-            new Setting("personal_level", Material.NAME_TAG, "إظهار المستوى الشخصي", false, "مفعل", "متوقف"),
-            new Setting("friend_requests", Material.PLAYER_HEAD, "طلبات الصداقة", false, "للجميع", "متوقف"),
-            new Setting("private_messages", Material.WRITABLE_BOOK, "الرسائل الخاصة", false, "للأصدقاء", "متوقف"),
-            new Setting("friend_join_notifications", Material.BELL, "إشعار دخول الأصدقاء", true, "مفعل", "متوقف"),
-            new Setting("scoreboard", Material.DARK_OAK_HANGING_SIGN, "لوحة النقاط", true, "مفعل", "متوقف"),
-            new Setting("show_players", Material.ENDER_EYE, "إظهار اللاعبين", true, "مفعل", "متوقف")
+            new Setting("duel_requests", Material.IRON_SWORD, "Duel Requests", true, "Enabled", "Disabled"),
+            new Setting("party_invites", Material.CAKE, "Party Invites", true, "Enabled", "Disabled"),
+            new Setting("explosion_effects", Material.WIND_CHARGE, "Explosion Effects", false, "Enabled", "Disabled"),
+            new Setting("kit_profile", Material.BOOK, "Kit Profile", false, "Visible", "Hidden"),
+            new Setting("personal_level", Material.NAME_TAG, "Personal Level", false, "Enabled", "Disabled"),
+            new Setting("friend_requests", Material.PLAYER_HEAD, "Friend Requests", false, "Enabled", "Disabled"),
+            new Setting("private_messages", Material.WRITABLE_BOOK, "Private Messages", false, "Friends Only", "Disabled"),
+            new Setting("friend_join_notifications", Material.BELL, "Friend Join Notifications", true, "Enabled", "Disabled"),
+            new Setting("scoreboard", Material.DARK_OAK_HANGING_SIGN, "Scoreboard", true, "Enabled", "Disabled"),
+            new Setting("show_players", Material.ENDER_EYE, "Show Players", true, "Enabled", "Disabled")
     );
 
     @Override public void onEnable() {
@@ -76,7 +76,7 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
             button(inv, 29, Material.NETHER_STAR, "§dPractice", "§7Open practice features.");
             button(inv, 31, Material.BOOK, "§6Server", "§7Server information.");
             button(inv, 33, Material.BARRIER, "§cClose");
-            button(inv, 20, Material.COMPARATOR, "§eSettings", "§7إعداداتك الشخصية");
+            button(inv, 20, Material.COMPARATOR, "§eSettings", "§7Personal settings");
         } else if (title.equals(DUELS)) {
             button(inv, 10, Material.DIAMOND_SWORD, "§bJoin Queue", "§7Uses the default queue.");
             button(inv, 13, Material.PAPER, "§fDuel Player", "§7Use /duel <player>.");
@@ -89,14 +89,14 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
             button(inv, 31, Material.ARROW, "§7Back");
             button(inv, 33, Material.BARRIER, "§cClose");
         } else if (title.equals(SETTINGS)) {
-            button(inv, 10, Material.LIME_DYE, "§aالاتصال", "§7متصل بالسيرفر", "§7نشاطك: §aمفعل");
+            button(inv, 10, Material.LIME_DYE, "§aالاتصال", "§7Connected to server", "§7Status: §aEnabled");
             for (int i = 0; i < SETTINGS_LIST.size(); i++) {
                 Setting s = SETTINGS_LIST.get(i);
                 boolean value = getSetting(p, s);
-                button(inv, 11 + i, s.material(), "§e" + s.label(), "§7الحالة: " + (value ? "§a" + s.on() : "§c" + s.off()), "§8اضغط للتبديل");
+                button(inv, 11 + i, s.material(), "§e" + s.label(), "§7Status: " + (value ? "§a" + s.on() : "§c" + s.off()), "§8Click to toggle");
             }
-            button(inv, 31, Material.ARROW, "§7رجوع");
-            button(inv, 33, Material.BARRIER, "§cإغلاق");
+            button(inv, 31, Material.ARROW, "§7Back");
+            button(inv, 33, Material.BARRIER, "§cClose");
         }
         p.openInventory(inv);
     }
@@ -141,7 +141,7 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
                 Bukkit.getScheduler().runTask(this, () -> {
                     settingBusy.remove(p.getUniqueId());
                     if (error != null) {
-                        p.sendMessage(ChatColor.RED + "تعذر حفظ الإعداد.");
+                        p.sendMessage(ChatColor.RED + "Could not save setting.");
                         return;
                     }
                     settingsCache.computeIfAbsent(p.getUniqueId(), ignoredId -> new ConcurrentHashMap<>())
