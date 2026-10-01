@@ -73,14 +73,14 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
             button(inv, 11, Material.DIAMOND_SWORD, "§bDuels", "§7Queue, request and spectate.");
             button(inv, 13, Material.CHEST, "§aKits", "§7Browse and equip kits.");
             button(inv, 15, Material.NETHERITE_HELMET, "§eStats", "§7Your profile and leaderboard.");
-            button(inv, 29, Material.NETHER_STAR, "§dPractice", "§7Open practice features.");
+            button(inv, 27, Material.NETHER_STAR, "§dPractice", "§7Open practice features.");
             button(inv, 31, Material.BOOK, "§6Server", "§7Server information.");
             button(inv, 33, Material.BARRIER, "§cClose");
             button(inv, 20, Material.COMPARATOR, "§eSettings", "§7Personal settings");
             button(inv, 22, Material.GOLD_INGOT, "§6Coin Shop", "§7Spend your practice coins.");
             button(inv, 24, Material.CAKE, "§dParty", "§7Create and manage your party.");
             button(inv, 26, Material.PAPER, "§cReports", "§7Report and review players.");
-            if (p.hasPermission("voidflame.arena.manage")) button(inv, 29, Material.IRON_BARS, "§bArena Admin", "§7Manage practice arenas.");
+            if (p.hasPermission("voidflame.arena.manage")) button(inv, 28, Material.IRON_BARS, "§bArena Admin", "§7Manage practice arenas.");
             if (p.hasPermission("voidflame.ranks.admin")) button(inv, 35, Material.NAME_TAG, "§5Rank Admin", "§7Manage ranks and assignments.");
         } else if (title.equals(DUELS)) {
             button(inv, 10, Material.DIAMOND_SWORD, "§bUnranked Queue", "§7Join the standard matchmaking queue.", "§8Click to join.");
@@ -184,8 +184,9 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
                 case 20 -> open(p, SETTINGS);
                 case 22 -> command(p, "coinshop");
                 case 24 -> command(p, "party info");
-                case 26 -> command(p, "report");
-                case 29 -> { if (p.hasPermission("voidflame.arena.manage")) command(p, "arena list"); else open(p, DUELS); }
+                case 26 -> command(p, p.hasPermission("voidflame.report.view") ? "reports" : "report");
+                case 27 -> command(p, "practice");
+                case 28 -> { if (p.hasPermission("voidflame.arena.manage")) command(p, "arena list"); }
                 case 35 -> { if (p.hasPermission("voidflame.ranks.admin")) command(p, "ranks"); }
                 case 31 -> { p.sendMessage("§bVoidFlameMC §fPractice Server"); p.sendMessage("§7Use §f/menu §7to open this menu."); p.sendMessage("§7Use §f/queue §7to join a duel queue."); p.sendMessage("§7Use §f/stats §7to view your statistics."); p.sendMessage("§8§m--------------------"); }
                 case 33 -> p.closeInventory();
