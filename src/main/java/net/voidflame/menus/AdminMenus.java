@@ -315,7 +315,7 @@ final class AdminMenus implements Listener {
             }).whenComplete((id,error)->{
                 purchasing.remove(uid);
                 Bukkit.getScheduler().runTask(plugin,()->{
-                    if(error!=null){p.sendMessage("§c"+error.getCause()!=null?error.getCause().getMessage():error.getMessage());return;}
+                    if(error!=null){p.sendMessage("§c"+(error.getCause()!=null?error.getCause().getMessage():error.getMessage()));return;}
                     p.sendMessage("§aPurchase completed: §f"+id);
                     queryProducts(p);
                 });
