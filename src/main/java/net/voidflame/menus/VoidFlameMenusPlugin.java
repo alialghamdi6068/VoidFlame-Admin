@@ -40,6 +40,7 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
 
     private StorageService storage;
     private PlayerSettingsService playerSettings;
+    private AdminMenus adminMenus;
 
     private record Setting(String key, Material material, String label, boolean defaultValue, String on, String off) {}
 
@@ -70,7 +71,9 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
             return;
         }
 
+        adminMenus = new AdminMenus(this, storage);
         getServer().getPluginManager().registerEvents(this, this);
+        getServer().getPluginManager().registerEvents(adminMenus, this);
         getLogger().info("VoidFlame-Menus enabled.");
     }
 
@@ -415,18 +418,10 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
                 case 19 -> command(player, "stats");
                 case 20 -> command(player, "history");
                 case 21 -> open(player, SETTINGS);
-                case 22 -> command(player, "coinshop");
-                case 23 -> command(player, player.hasPermission("voidflame.report.view") ? "reports" : "report");
-                case 24 -> {
-                    if (player.hasPermission("voidflame.arena.manage")) {
-                        command(player, "arena list");
-                    }
-                }
-                case 18 -> {
-                    if (player.hasPermission("voidflame.ranks.admin")) {
-                        command(player, "ranks");
-                    }
-                }
+                case 22 -> adminMenus.openShop(player);
+                case 23 -> adminMenus.openReports(player);
+                case 24 -> adminMenus.openArenas(player);
+                case 18 -> adminMenus.openRanks(player);
                 case 25 -> {
                     player.sendMessage("§d§lVoidFlameMC §8• §fPractice");
                     player.sendMessage("§7Server: §fplay.VoidFlame.net");
