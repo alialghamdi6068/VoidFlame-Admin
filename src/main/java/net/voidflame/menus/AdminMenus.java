@@ -30,11 +30,26 @@ final class AdminMenus implements Listener {
     private final VoidFlameMenusPlugin plugin;
     private final StorageService storage;
     private final Map<UUID, Input> input=new ConcurrentHashMap<>();
+    private final Set<UUID> purchasing=ConcurrentHashMap.newKeySet();
     private record Input(Type type,String value){ }
     private enum Type { REPORT_REASON, RANK_ID, RANK_PLAYER, RANK_PERMISSION, ARENA_NAME, ARENA_TEMPLATE }
 
     AdminMenus(VoidFlameMenusPlugin plugin, StorageService storage){
         this.plugin=plugin; this.storage=storage;
+        seedShop();
+    }
+
+    private void seedShop(){
+        String[][] products={
+            {"chat_color_purple","Purple Chat Color","PURPLE_DYE","250"},
+            {"chat_color_cyan","Cyan Chat Color","CYAN_DYE","250"},
+            {"tag_duelist","Duelist Tag","NAME_TAG","500"},
+            {"tag_champion","Champion Tag","GOLD_INGOT","1000"},
+            {"profile_effect","Profile Effect","FIREWORK_STAR","1500"}
+        };
+        for(String[] x:products) storage.database().execute(
+            "INSERT OR IGNORE INTO shop_products(product_id,display_name,material,price,enabled,metadata_json) VALUES(?,?,?,?,1,'{}')",
+            x[0],x[1],x[2],Long.parseLong(x[3]));
     }
 
     void openShop(Player p){ queryProducts(p); }
@@ -282,16 +297,27 @@ final class AdminMenus implements Listener {
     }
 
     private void purchase(Player p,String displayName){
+        UUID uid=p.getUniqueId();
+        if(!purchasing.add(uid)) return;
         storage.database().query("SELECT product_id,price FROM shop_products WHERE display_name=? AND enabled=1 LIMIT 1",displayName)
-            .thenAccept(rows->{
-                if(rows.isEmpty()){p.sendMessage("§cProduct unavailable.");return;}
-                String id=String.valueOf(rows.getFirst().get("product_id")); long price=((Number)rows.getFirst().get("price")).longValue();
-                storage.database().query("SELECT coins FROM player_profiles WHERE uuid=?",p.getUniqueId().toString()).thenAccept(coinsRows->{
-                    long coins=coinsRows.isEmpty()?0:((Number)coinsRows.getFirst().get("coins")).longValue();
-                    if(coins<price){p.sendMessage("§cNot enough coins.");return;}
-                    storage.database().update("UPDATE player_profiles SET coins=coins-? WHERE uuid=? AND coins>=?",price,p.getUniqueId().toString(),price)
-                        .thenCompose(changed->changed==1?storage.database().execute("INSERT OR IGNORE INTO player_shop_purchases(uuid,product_id,purchased_at) VALUES(?,?,?)",p.getUniqueId().toString(),id,System.currentTimeMillis()):java.util.concurrent.CompletableFuture.completedFuture(null))
-                        .thenRun(()->Bukkit.getScheduler().runTask(plugin,()->{p.sendMessage("§aPurchase completed.");queryProducts(p);}));
+            .thenCompose(rows->{
+                if(rows.isEmpty()) return java.util.concurrent.CompletableFuture.failedFuture(new IllegalArgumentException("Product unavailable."));
+                String id=String.valueOf(rows.getFirst().get("product_id"));
+                long price=((Number)rows.getFirst().get("price")).longValue();
+                return storage.database().query("SELECT 1 FROM player_shop_purchases WHERE uuid=? AND product_id=? LIMIT 1",uid.toString(),id)
+                    .thenCompose(owned->{
+                        if(!owned.isEmpty()) return java.util.concurrent.CompletableFuture.failedFuture(new IllegalArgumentException("You already own this product."));
+                        return storage.database().update("UPDATE player_profiles SET coins=coins-? WHERE uuid=? AND coins>=?",price,uid.toString(),price)
+                            .thenCompose(changed->changed==1
+                                ? storage.database().execute("INSERT INTO player_shop_purchases(uuid,product_id,purchased_at) VALUES(?,?,?)",uid.toString(),id,System.currentTimeMillis()))
+                            .thenApply(v->id);
+                    });
+            }).whenComplete((id,error)->{
+                purchasing.remove(uid);
+                Bukkit.getScheduler().runTask(plugin,()->{
+                    if(error!=null){p.sendMessage("§c"+error.getCause()!=null?error.getCause().getMessage():error.getMessage());return;}
+                    p.sendMessage("§aPurchase completed: §f"+id);
+                    queryProducts(p);
                 });
             });
     }
