@@ -363,7 +363,7 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
     @EventHandler
     public void click(InventoryClickEvent event) {
         String title = event.getView().getTitle();
-        if (!title.equals(MAIN) && !title.equals(STATS) && !title.equals(SETTINGS)) {
+        if (!title.equals(MAIN) && !title.equals(QUEUE) && !title.equals(STATS) && !title.equals(SETTINGS)) {
             return;
         }
 
