@@ -5,6 +5,7 @@ import net.voidflame.core.storage.StorageService;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -14,6 +15,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
@@ -32,14 +34,16 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
     private final Map<UUID, Boolean> settingBusy = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastClicks = new ConcurrentHashMap<>();
     private final Map<UUID, Map<String, Boolean>> settingsCache = new ConcurrentHashMap<>();
+
     private StorageService storage;
     private PlayerSettingsService playerSettings;
 
     private record Setting(String key, Material material, String label, boolean defaultValue, String on, String off) {}
+
     private static final List<Setting> SETTINGS_LIST = List.of(
-            new Setting("duel_requests", Material.IRON_SWORD, "Duel Requests", true, "Enabled", "Disabled"),
+            new Setting("duel_requests", Material.PAPER, "Duel Requests", true, "Enabled", "Disabled"),
             new Setting("party_invites", Material.CAKE, "Party Invites", true, "Enabled", "Disabled"),
-            new Setting("explosion_effects", Material.WIND_CHARGE, "Explosion Effects", false, "Enabled", "Disabled"),
+            new Setting("explosion_effects", Material.FIREWORK_STAR, "Match Effects", false, "Enabled", "Disabled"),
             new Setting("kit_profile", Material.BOOK, "Kit Profile", false, "Visible", "Hidden"),
             new Setting("personal_level", Material.NAME_TAG, "Personal Level", false, "Enabled", "Disabled"),
             new Setting("friend_requests", Material.PLAYER_HEAD, "Friend Requests", false, "Enabled", "Disabled"),
@@ -49,99 +53,204 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
             new Setting("show_players", Material.ENDER_EYE, "Show Players", true, "Enabled", "Disabled")
     );
 
-    @Override public void onEnable() {
+    @Override
+    public void onEnable() {
         saveDefaultConfig();
-        var r = getServer().getServicesManager().getRegistration(StorageService.class);
-        var s = getServer().getServicesManager().getRegistration(PlayerSettingsService.class);
-        if (r == null || (storage = r.getProvider()) == null || s == null || (playerSettings = s.getProvider()) == null) {
+
+        var registration = getServer().getServicesManager().getRegistration(StorageService.class);
+        var settingsRegistration = getServer().getServicesManager().getRegistration(PlayerSettingsService.class);
+
+        if (registration == null || (storage = registration.getProvider()) == null
+                || settingsRegistration == null || (playerSettings = settingsRegistration.getProvider()) == null) {
             getLogger().severe("VoidFlame-Core storage unavailable.");
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
+
         getServer().getPluginManager().registerEvents(this, this);
         getLogger().info("VoidFlame-Menus enabled.");
     }
 
-    public void open(Player player) { open(player, MAIN); }
+    public void open(Player player) {
+        open(player, MAIN);
+    }
 
     private void open(Player player, String title) {
-        Inventory inv = Bukkit.createInventory(null, 27, title);
-        decorate(inv);
+        Inventory inventory = Bukkit.createInventory(null, 27, title);
+        decorate(inventory);
+
         switch (title) {
-            case MAIN -> main(player, inv);
-            case STATS -> stats(inv);
-            case SETTINGS -> settings(player, inv);
-            default -> {}
+            case MAIN -> main(player, inventory);
+            case STATS -> stats(player, inventory);
+            case SETTINGS -> settings(player, inventory);
+            default -> {
+            }
         }
-        player.openInventory(inv);
+
+        player.openInventory(inventory);
+        play(player, Sound.BLOCK_CHEST_OPEN, 0.65f, 1.15f);
     }
 
-    private void main(Player p, Inventory inv) {
-        inv.setItem(4, head(p, "§d§l" + p.getName(),
-                "§7VoidFlameMC Practice", "§8Click for your stats"));
+    private void main(Player player, Inventory inventory) {
+        // Profile/header block
+        inventory.setItem(4, head(player, "§d§l" + player.getName(),
+                "§7VoidFlameMC Practice",
+                "§8Your personal profile",
+                "",
+                "§fClick §8» §dView Stats"));
 
-        button(inv, 10, Material.DIAMOND_SWORD, "§b§lUnranked", "§7Quick casual matchmaking.", "§eClick to choose a kit");
-        button(inv, 12, Material.NETHER_STAR, "§d§lRanked", "§7Competitive ELO matchmaking.", "§eClick to choose a kit");
-        button(inv, 14, Material.PLAYER_HEAD, "§6§lParty", "§7Play with your friends.", "§eClick to open party");
+        // Primary play row — deliberately compact and centered.
+        button(inventory, 10, Material.PAPER, "§d§lUnranked Queue",
+                "§7Fast matchmaking with no ELO pressure.",
+                "",
+                "§dLeft-click §8» §fOpen Queue");
+        button(inventory, 11, Material.NETHER_STAR, "§5§lRanked Queue",
+                "§7Competitive matchmaking with ELO.",
+                "",
+                "§dLeft-click §8» §fOpen Queue");
 
-        button(inv, 16, Material.CHEST, "§a§lKits", "§7Browse kits and layouts.", "§eClick to open");
-        button(inv, 19, Material.GOLD_INGOT, "§6§lCoin Shop", "§7Spend your practice coins.", "§eClick to open");
-        button(inv, 21, Material.EMERALD, "§e§lStats", "§7Wins, losses, streak and ELO.", "§eClick to open");
-        button(inv, 23, Material.ENDER_EYE, "§d§lPractice", "§7FFA and training.", "§eClick to open");
+        button(inventory, 13, Material.PLAYER_HEAD, "§b§lParty",
+                "§7Create, manage and queue your party.",
+                "",
+                "§dLeft-click §8» §fOpen Party");
 
-        button(inv, 25, Material.BOOK, "§f§lHistory", "§7Review completed matches.", "§eClick to open");
-        button(inv, 11, Material.PAPER, "§c§lReports", "§7Report a player.", "§eClick to open");
-        button(inv, 13, Material.COMPARATOR, "§e§lSettings", "§7Personal gameplay settings.", "§eClick to open");
-        button(inv, 15, Material.NETHER_STAR, "§5§lServer", "§7play.VoidFlame.net");
+        button(inventory, 15, Material.ENDER_EYE, "§a§lPractice",
+                "§7FFA and training modes.",
+                "",
+                "§dLeft-click §8» §fOpen Practice");
 
-        if (p.hasPermission("voidflame.arena.manage"))
-            button(inv, 20, Material.IRON_BARS, "§b§lArena Admin", "§7Manage practice arenas.");
-        if (p.hasPermission("voidflame.ranks.admin"))
-            button(inv, 22, Material.NAME_TAG, "§5§lRank Admin", "§7Manage ranks and assignments.");
+        button(inventory, 16, Material.BOOK, "§e§lKits",
+                "§7View kits and edit your layouts.",
+                "",
+                "§dLeft-click §8» §fOpen Kits");
 
-        button(inv, 26, Material.BARRIER, "§c§lClose", "§7Close this menu.");
+        // Utility row
+        button(inventory, 19, Material.EMERALD, "§a§lStatistics",
+                "§7Wins, losses, streak and ELO.",
+                "",
+                "§dLeft-click §8» §fView Stats");
+
+        button(inventory, 20, Material.PAPER, "§f§lMatch History",
+                "§7Review your recent matches.",
+                "",
+                "§dLeft-click §8» §fView History");
+
+        button(inventory, 21, Material.COMPARATOR, "§b§lSettings",
+                "§7Personal gameplay preferences.",
+                "",
+                "§dLeft-click §8» §fOpen Settings");
+
+        button(inventory, 22, Material.GOLD_INGOT, "§6§lCoin Shop",
+                "§7Spend your earned practice coins.",
+                "",
+                "§dLeft-click §8» §fOpen Shop");
+
+        button(inventory, 23, Material.PAPER, "§c§lReports",
+                "§7Report a player or review reports.",
+                "",
+                "§dLeft-click §8» §fOpen Reports");
+
+        button(inventory, 25, Material.NETHER_STAR, "§5§lVoidFlameMC",
+                "§7Practice Network",
+                "§fplay.VoidFlame.net");
+
+        if (player.hasPermission("voidflame.arena.manage")) {
+            button(inventory, 24, Material.IRON_BARS, "§b§lArena Admin",
+                    "§7Manage practice arenas.",
+                    "",
+                    "§dLeft-click §8» §fOpen Arena Admin");
+        }
+
+        if (player.hasPermission("voidflame.ranks.admin")) {
+            button(inventory, 18, Material.NAME_TAG, "§5§lRank Admin",
+                    "§7Manage ranks and assignments.",
+                    "",
+                    "§dLeft-click §8» §fOpen Rank Admin");
+        }
+
+        button(inventory, 26, Material.BARRIER, "§c§lClose", "§7Close this menu.");
     }
 
-    private void stats(Inventory inv) {
-        button(inv, 4, Material.PLAYER_HEAD, "§e§lStatistics", "§7Track your practice progress.");
-        button(inv, 11, Material.PLAYER_HEAD, "§e§lMy Stats", "§7Wins, losses, streak and ELO.", "§eClick to open");
-        button(inv, 13, Material.PAPER, "§b§lMatch History", "§7Recent completed matches.", "§eClick to open");
-        button(inv, 15, Material.GOLD_INGOT, "§6§lLeaderboard", "§7Top players.", "§eClick to open");
-        button(inv, 18, Material.ARROW, "§7§lBack", "§7Return to the main menu.");
-        button(inv, 26, Material.BARRIER, "§c§lClose", "§7Close this menu.");
+    private void stats(Player player, Inventory inventory) {
+        inventory.setItem(4, head(player, "§d§lYour Statistics",
+                "§7VoidFlameMC Practice",
+                "",
+                "§fTrack your competitive progress."));
+
+        button(inventory, 10, Material.EMERALD, "§a§lMy Stats",
+                "§7Wins, losses, streak and ELO.",
+                "",
+                "§dClick §8» §fOpen Stats");
+
+        button(inventory, 12, Material.PAPER, "§f§lMatch History",
+                "§7Recent completed matches.",
+                "",
+                "§dClick §8» §fOpen History");
+
+        button(inventory, 14, Material.GOLD_INGOT, "§6§lLeaderboard",
+                "§7Compare public rankings.",
+                "",
+                "§dClick §8» §fOpen Leaderboard");
+
+        button(inventory, 16, Material.BOOK, "§b§lProfile",
+                "§7Your public practice profile.",
+                "",
+                "§dClick §8» §fOpen Profile");
+
+        navigation(inventory);
     }
 
-    private void settings(Player p, Inventory inv) {
-        button(inv, 4, Material.COMPARATOR, "§e§lSettings", "§7Customize your practice experience.");
+    private void settings(Player player, Inventory inventory) {
+        inventory.setItem(4, item(Material.COMPARATOR, "§b§lSettings",
+                "§7Customize your practice experience.",
+                "",
+                "§8Click any option to toggle it."));
+
         int[] slots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21};
         for (int i = 0; i < SETTINGS_LIST.size(); i++) {
-            Setting s = SETTINGS_LIST.get(i);
-            boolean value = getSetting(p, s);
-            button(inv, slots[i], s.material(), "§f" + s.label(),
-                    "§7Status: " + (value ? "§a" + s.on() : "§c" + s.off()), "§8Click to toggle");
+            Setting setting = SETTINGS_LIST.get(i);
+            boolean enabled = getSetting(player, setting);
+            String state = enabled ? "§a" + setting.on() : "§c" + setting.off();
+
+            button(inventory, slots[i], setting.material(),
+                    (enabled ? "§a" : "§c") + setting.label(),
+                    "§7Status: " + state,
+                    "",
+                    "§dClick §8» §fToggle");
         }
-        button(inv, 18, Material.ARROW, "§7§lBack", "§7Return to the main menu.");
-        button(inv, 26, Material.BARRIER, "§c§lClose", "§7Close this menu.");
+
+        navigation(inventory);
     }
 
-    private void decorate(Inventory inv) {
+    private void navigation(Inventory inventory) {
+        button(inventory, 18, Material.ARROW, "§7§lBack", "§7Return to the previous menu.");
+        button(inventory, 26, Material.BARRIER, "§c§lClose", "§7Close this menu.");
+    }
+
+    private void decorate(Inventory inventory) {
         ItemStack filler = item(Material.GRAY_STAINED_GLASS_PANE, " ");
-        for (int slot = 0; slot < 27; slot++) inv.setItem(slot, filler.clone());
+        for (int slot = 0; slot < inventory.getSize(); slot++) {
+            inventory.setItem(slot, filler.clone());
+        }
 
         ItemStack accent = item(Material.PURPLE_STAINED_GLASS_PANE, " ");
-        for (int slot : new int[]{1, 2, 3, 5, 6, 7, 24}) inv.setItem(slot, accent.clone());
+        for (int slot : new int[]{1, 2, 3, 5, 6, 7, 9, 17, 18, 24, 25}) {
+            inventory.setItem(slot, accent.clone());
+        }
     }
 
-    private void button(Inventory inv, int slot, Material material, String name, String... lore) {
-        inv.setItem(slot, item(material, name, lore));
+    private void button(Inventory inventory, int slot, Material material, String name, String... lore) {
+        ItemStack stack = item(material, name, lore);
+        inventory.setItem(slot, stack);
     }
 
-    private ItemStack head(Player p, String name, String... lore) {
+    private ItemStack head(Player player, String name, String... lore) {
         ItemStack stack = new ItemStack(Material.PLAYER_HEAD);
         if (stack.getItemMeta() instanceof SkullMeta meta) {
-            meta.setOwningPlayer(p);
+            meta.setOwningPlayer(player);
             meta.setDisplayName(name);
             meta.setLore(List.of(lore));
+            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             stack.setItemMeta(meta);
         }
         return stack;
@@ -153,105 +262,172 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
         if (meta != null) {
             meta.setDisplayName(name);
             meta.setLore(List.of(lore));
+            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             stack.setItemMeta(meta);
         }
         return stack;
     }
 
-    private boolean getSetting(Player p, Setting s) {
-        Map<String, Boolean> values = settingsCache.get(p.getUniqueId());
-        return values == null ? s.defaultValue() : values.getOrDefault(s.key(), s.defaultValue());
+    private boolean getSetting(Player player, Setting setting) {
+        Map<String, Boolean> values = settingsCache.get(player.getUniqueId());
+        return values == null ? setting.defaultValue() : values.getOrDefault(setting.key(), setting.defaultValue());
     }
 
-    private void loadSettings(Player p) {
-        UUID id = p.getUniqueId();
+    private void loadSettings(Player player) {
+        UUID id = player.getUniqueId();
         Map<String, Boolean> values = new ConcurrentHashMap<>();
         settingsCache.put(id, values);
-        for (Setting s : SETTINGS_LIST) playerSettings.get(id, s.key(), s.defaultValue()).thenAccept(v -> values.put(s.key(), v));
-    }
 
-    private void toggle(Player p, Setting s) {
-        if (settingBusy.putIfAbsent(p.getUniqueId(), true) != null) return;
-        boolean value = !getSetting(p, s);
-        playerSettings.set(p.getUniqueId(), s.key(), value).whenComplete((ignored, error) ->
-                Bukkit.getScheduler().runTask(this, () -> {
-                    settingBusy.remove(p.getUniqueId());
-                    if (error != null) { p.sendMessage(ChatColor.RED + "Could not save setting."); return; }
-                    settingsCache.computeIfAbsent(p.getUniqueId(), id -> new ConcurrentHashMap<>()).put(s.key(), value);
-                    open(p, SETTINGS);
-                }));
-    }
-
-    private void command(Player p, String command) {
-        p.closeInventory();
-        Bukkit.dispatchCommand(p, command);
-    }
-
-    @EventHandler public void onJoin(PlayerJoinEvent e) { loadSettings(e.getPlayer()); }
-
-    @EventHandler public void click(InventoryClickEvent e) {
-        String title = e.getView().getTitle();
-        if (!title.equals(MAIN) && !title.equals(STATS) && !title.equals(SETTINGS)) return;
-        e.setCancelled(true);
-        if (!(e.getWhoClicked() instanceof Player p) || e.getRawSlot() < 0 || e.getRawSlot() >= 27) return;
-
-        long now = System.currentTimeMillis();
-        long cooldown = Math.max(0L, getConfig().getLong("settings.click-cooldown-ms", 250L));
-        Long previous = lastClicks.put(p.getUniqueId(), now);
-        if (previous != null && now - previous < cooldown) return;
-
-        if (title.equals(MAIN)) {
-            switch (e.getRawSlot()) {
-                case 10 -> command(p, "queue sword");
-                case 12 -> command(p, "queue ranked sword");
-                case 14 -> command(p, "party info");
-                case 16 -> command(p, "kits");
-                case 19 -> command(p, "coinshop");
-                case 21 -> open(p, STATS);
-                case 23 -> command(p, "practice");
-                case 25 -> command(p, "history");
-                case 11 -> command(p, p.hasPermission("voidflame.report.view") ? "reports" : "report");
-                case 13 -> open(p, SETTINGS);
-                case 15 -> {
-                    p.sendMessage("§d§lVoidFlameMC §8• §fPractice");
-                    p.sendMessage("§7Server: §fplay.VoidFlame.net");
-                }
-                case 20 -> { if (p.hasPermission("voidflame.arena.manage")) command(p, "arena list"); }
-                case 22 -> { if (p.hasPermission("voidflame.ranks.admin")) command(p, "ranks"); }
-                case 26 -> p.closeInventory();
-                case 4 -> command(p, "stats");
-                default -> {}
-            }
-        } else if (title.equals(STATS)) {
-            switch (e.getRawSlot()) {
-                case 11 -> command(p, "stats");
-                case 13 -> command(p, "history");
-                case 15 -> command(p, "stats top");
-                case 18 -> open(p, MAIN);
-                case 26 -> p.closeInventory();
-                default -> {}
-            }
-        } else {
-            int[] slots = {10,11,12,13,14,15,16,19,20,21};
-            for (int i = 0; i < slots.length; i++) if (e.getRawSlot() == slots[i]) {
-                toggle(p, SETTINGS_LIST.get(i));
-                return;
-            }
-            if (e.getRawSlot() == 18) open(p, MAIN);
-            else if (e.getRawSlot() == 26) p.closeInventory();
+        for (Setting setting : SETTINGS_LIST) {
+            playerSettings.get(id, setting.key(), setting.defaultValue())
+                    .thenAccept(value -> values.put(setting.key(), value));
         }
     }
 
-    @EventHandler public void onQuit(PlayerQuitEvent e) {
-        UUID id = e.getPlayer().getUniqueId();
+    private void toggle(Player player, Setting setting) {
+        if (settingBusy.putIfAbsent(player.getUniqueId(), true) != null) {
+            return;
+        }
+
+        boolean value = !getSetting(player, setting);
+        playerSettings.set(player.getUniqueId(), setting.key(), value)
+                .whenComplete((ignored, error) -> Bukkit.getScheduler().runTask(this, () -> {
+                    settingBusy.remove(player.getUniqueId());
+
+                    if (error != null) {
+                        player.sendMessage(ChatColor.RED + "Could not save setting.");
+                        play(player, Sound.BLOCK_NOTE_BLOCK_BASS, 0.6f, 0.7f);
+                        return;
+                    }
+
+                    settingsCache
+                            .computeIfAbsent(player.getUniqueId(), ignoredId -> new ConcurrentHashMap<>())
+                            .put(setting.key(), value);
+
+                    play(player, Sound.UI_BUTTON_CLICK, 0.6f, value ? 1.2f : 0.8f);
+                    open(player, SETTINGS);
+                }));
+    }
+
+    private void command(Player player, String command) {
+        player.closeInventory();
+        play(player, Sound.UI_BUTTON_CLICK, 0.6f, 1.0f);
+        Bukkit.dispatchCommand(player, command);
+    }
+
+    private void play(Player player, Sound sound, float volume, float pitch) {
+        if (getConfig().getBoolean("settings.sound-enabled", true)) {
+            player.playSound(player.getLocation(), sound, volume, pitch);
+        }
+    }
+
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event) {
+        loadSettings(event.getPlayer());
+    }
+
+    @EventHandler
+    public void click(InventoryClickEvent event) {
+        String title = event.getView().getTitle();
+        if (!title.equals(MAIN) && !title.equals(STATS) && !title.equals(SETTINGS)) {
+            return;
+        }
+
+        event.setCancelled(true);
+
+        if (!(event.getWhoClicked() instanceof Player player)
+                || event.getRawSlot() < 0
+                || event.getRawSlot() >= 27) {
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        long cooldown = Math.max(0L, getConfig().getLong("settings.click-cooldown-ms", 250L));
+        Long previous = lastClicks.put(player.getUniqueId(), now);
+        if (previous != null && now - previous < cooldown) {
+            return;
+        }
+
+        play(player, Sound.UI_BUTTON_CLICK, 0.45f, 1.05f);
+
+        if (title.equals(MAIN)) {
+            switch (event.getRawSlot()) {
+                case 10 -> command(player, "queue sword");
+                case 11 -> command(player, "queue ranked sword");
+                case 13 -> command(player, "party info");
+                case 15 -> command(player, "practice");
+                case 16 -> command(player, "kits");
+                case 19 -> command(player, "stats");
+                case 20 -> command(player, "history");
+                case 21 -> open(player, SETTINGS);
+                case 22 -> command(player, "coinshop");
+                case 23 -> command(player, player.hasPermission("voidflame.report.view") ? "reports" : "report");
+                case 24 -> {
+                    if (player.hasPermission("voidflame.arena.manage")) {
+                        command(player, "arena list");
+                    }
+                }
+                case 18 -> {
+                    if (player.hasPermission("voidflame.ranks.admin")) {
+                        command(player, "ranks");
+                    }
+                }
+                case 25 -> {
+                    player.sendMessage("§d§lVoidFlameMC §8• §fPractice");
+                    player.sendMessage("§7Server: §fplay.VoidFlame.net");
+                }
+                case 4 -> command(player, "stats");
+                case 26 -> player.closeInventory();
+                default -> {
+                }
+            }
+            return;
+        }
+
+        if (title.equals(STATS)) {
+            switch (event.getRawSlot()) {
+                case 10, 16 -> command(player, "stats");
+                case 12 -> command(player, "history");
+                case 14 -> command(player, "stats top");
+                case 18 -> open(player, MAIN);
+                case 26 -> player.closeInventory();
+                default -> {
+                }
+            }
+            return;
+        }
+
+        int[] slots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21};
+        for (int i = 0; i < slots.length; i++) {
+            if (event.getRawSlot() == slots[i]) {
+                toggle(player, SETTINGS_LIST.get(i));
+                return;
+            }
+        }
+
+        if (event.getRawSlot() == 18) {
+            open(player, MAIN);
+        } else if (event.getRawSlot() == 26) {
+            player.closeInventory();
+        }
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        UUID id = event.getPlayer().getUniqueId();
         settingsCache.remove(id);
         settingBusy.remove(id);
         lastClicks.remove(id);
     }
 
-    @Override public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player p)) { sender.sendMessage("Players only."); return true; }
-        open(p);
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("Players only.");
+            return true;
+        }
+
+        open(player);
         return true;
     }
 }
