@@ -177,7 +177,6 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
                 case 15 -> open(p, STATS);
                 case 20 -> open(p, SETTINGS);
                 case 29 -> open(p, DUELS);
-                case 31 -> p.sendMessage("§8§m--------------------");
                 case 31 -> { p.sendMessage("§bVoidFlameMC §fPractice Server"); p.sendMessage("§7Use §f/menu §7to open this menu."); p.sendMessage("§7Use §f/queue §7to join a duel queue."); p.sendMessage("§7Use §f/stats §7to view your statistics."); p.sendMessage("§8§m--------------------"); }
                 case 33 -> p.closeInventory();
                 default -> {}
