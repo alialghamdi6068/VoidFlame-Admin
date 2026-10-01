@@ -185,7 +185,7 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
                 case 22 -> command(p, "coinshop");
                 case 24 -> command(p, "party info");
                 case 26 -> command(p, "report");
-                case 29 -> p.hasPermission("voidflame.arena.manage") ? command(p, "arena list") : open(p, DUELS);
+                case 29 -> { if (p.hasPermission("voidflame.arena.manage")) command(p, "arena list"); else open(p, DUELS); }
                 case 35 -> { if (p.hasPermission("voidflame.ranks.admin")) command(p, "ranks"); }
                 case 31 -> { p.sendMessage("§bVoidFlameMC §fPractice Server"); p.sendMessage("§7Use §f/menu §7to open this menu."); p.sendMessage("§7Use §f/queue §7to join a duel queue."); p.sendMessage("§7Use §f/stats §7to view your statistics."); p.sendMessage("§8§m--------------------"); }
                 case 33 -> p.closeInventory();
