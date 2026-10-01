@@ -281,7 +281,7 @@ final class AdminMenus implements Listener {
             }
             case RANK_ID -> {
                 if(in.value().isBlank()){storage.database().execute("INSERT INTO module_data(module,data_key,data_value,updated_at) VALUES('ranks',?,?,datetime('now'))","rank."+msg,
-                    Base64.getEncoder().encodeToString(msg.getBytes()),"").thenRun(()->openRanks(p));}
+                    Base64.getEncoder().encodeToString(msg.getBytes())).thenRun(()->openRanks(p));}
                 else storage.database().update("UPDATE module_data SET data_value=? WHERE module='ranks' AND data_key=?","", "rank."+in.value()).thenRun(()->p.sendMessage("§aRank value updated. Use the native rank command for full encoding."));
             }
             case RANK_PLAYER -> {
