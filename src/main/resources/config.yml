@@ -6,8 +6,8 @@ settings:
   sound-enabled: true
   click-cooldown-ms: 250
   async-load: true
-  cache-version: 3
-  page-size: 45
+  cache-version: 4
+  page-size: 27
   filler-item: GRAY_STAINED_GLASS_PANE
 
 settings-menu:
@@ -28,4 +28,4 @@ navigation:
   confirm-enabled: true
   cancel-enabled: true
   invalid-action-message: true
-# maintenance: final integration build against latest VoidFlame-Core
+# إعدادات القوائم المضغوطة: 27 خانة مثل واجهات Practice الحديثة
