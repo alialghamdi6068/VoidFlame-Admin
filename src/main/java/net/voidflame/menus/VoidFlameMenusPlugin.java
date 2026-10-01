@@ -77,6 +77,11 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
             button(inv, 31, Material.BOOK, "§6Server", "§7Server information.");
             button(inv, 33, Material.BARRIER, "§cClose");
             button(inv, 20, Material.COMPARATOR, "§eSettings", "§7Personal settings");
+            button(inv, 22, Material.GOLD_INGOT, "§6Coin Shop", "§7Spend your practice coins.");
+            button(inv, 24, Material.CAKE, "§dParty", "§7Create and manage your party.");
+            button(inv, 26, Material.PAPER, "§cReports", "§7Report and review players.");
+            if (p.hasPermission("voidflame.arena.manage")) button(inv, 29, Material.IRON_BARS, "§bArena Admin", "§7Manage practice arenas.");
+            if (p.hasPermission("voidflame.ranks.admin")) button(inv, 35, Material.NAME_TAG, "§5Rank Admin", "§7Manage ranks and assignments.");
         } else if (title.equals(DUELS)) {
             button(inv, 10, Material.DIAMOND_SWORD, "§bUnranked Queue", "§7Join the standard matchmaking queue.", "§8Click to join.");
             button(inv, 11, Material.NETHER_STAR, "§dRanked Queue", "§7Match by ELO.", "§8Click to join.");
@@ -176,7 +181,7 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
                 case 13 -> command(p, "kits");
                 case 15 -> open(p, STATS);
                 case 20 -> open(p, SETTINGS);
-                case 29 -> open(p, DUELS);
+                case 22 -> command(p, "coinshop");\n                case 24 -> command(p, "party info");\n                case 26 -> command(p, "report");\n                case 29 -> p.hasPermission("voidflame.arena.manage") ? command(p, "arena list") : open(p, DUELS);\n                case 35 -> { if (p.hasPermission("voidflame.ranks.admin")) command(p, "ranks"); }
                 case 31 -> { p.sendMessage("§bVoidFlameMC §fPractice Server"); p.sendMessage("§7Use §f/menu §7to open this menu."); p.sendMessage("§7Use §f/queue §7to join a duel queue."); p.sendMessage("§7Use §f/stats §7to view your statistics."); p.sendMessage("§8§m--------------------"); }
                 case 33 -> p.closeInventory();
                 default -> {}
