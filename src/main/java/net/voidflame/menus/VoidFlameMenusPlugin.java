@@ -30,6 +30,7 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
     private static final String MAIN = "§8VoidFlame §7• §fPractice";
     private static final String STATS = "§8VoidFlame §7• §fStats";
     private static final String SETTINGS = "§8VoidFlame §7• §fSettings";
+    private static final String QUEUE = "§8VoidFlame §7• §fQueue";
 
     private final Map<UUID, Boolean> settingBusy = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastClicks = new ConcurrentHashMap<>();
@@ -83,6 +84,7 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
             case MAIN -> main(player, inventory);
             case STATS -> stats(player, inventory);
             case SETTINGS -> settings(player, inventory);
+            case QUEUE -> queue(player, inventory);
             default -> {
             }
         }
@@ -169,6 +171,38 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
         }
 
         button(inventory, 26, Material.BARRIER, "§c§lClose", "§7Close this menu.");
+    }
+
+    private void queue(Player player, Inventory inventory) {
+        inventory.setItem(4, head(player, "§d§lPlay Practice",
+                "§7Choose how you want to play.",
+                "",
+                "§fFast queues • Clean matchmaking"));
+
+        button(inventory, 10, Material.PAPER, "§d§lUnranked",
+                "§7Casual matchmaking.",
+                "§7No rating changes.",
+                "",
+                "§dClick §8» §fChoose Kit");
+
+        button(inventory, 12, Material.NETHER_STAR, "§5§lRanked",
+                "§7Competitive matchmaking.",
+                "§7ELO is used for matchmaking.",
+                "",
+                "§dClick §8» §fChoose Kit");
+
+        button(inventory, 14, Material.ENDER_EYE, "§a§lPractice",
+                "§7Open practice modes.",
+                "",
+                "§dClick §8» §fOpen Practice");
+
+        button(inventory, 16, Material.PLAYER_HEAD, "§b§lParty",
+                "§7Play with your friends.",
+                "",
+                "§dClick §8» §fOpen Party");
+
+        button(inventory, 22, Material.BARRIER, "§c§lClose", "§7Close this menu.");
+        button(inventory, 18, Material.ARROW, "§7§lBack", "§7Return to the main menu.");
     }
 
     private void stats(Player player, Inventory inventory) {
@@ -352,8 +386,7 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
 
         if (title.equals(MAIN)) {
             switch (event.getRawSlot()) {
-                case 10 -> command(player, "queue sword");
-                case 11 -> command(player, "queue ranked sword");
+                case 10, 11 -> open(player, QUEUE);
                 case 13 -> command(player, "party info");
                 case 15 -> command(player, "practice");
                 case 16 -> command(player, "kits");
@@ -378,6 +411,20 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
                 }
                 case 4 -> command(player, "stats");
                 case 26 -> player.closeInventory();
+                default -> {
+                }
+            }
+            return;
+        }
+
+        if (title.equals(QUEUE)) {
+            switch (event.getRawSlot()) {
+                case 10 -> command(player, "queue sword");
+                case 12 -> command(player, "queue ranked sword");
+                case 14 -> command(player, "practice");
+                case 16 -> command(player, "party info");
+                case 18 -> open(player, MAIN);
+                case 22, 26 -> player.closeInventory();
                 default -> {
                 }
             }
