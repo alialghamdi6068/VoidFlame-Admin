@@ -31,6 +31,8 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
     private static final String STATS = "§8VoidFlame §7• §fStats";
     private static final String SETTINGS = "§8VoidFlame §7• §fSettings";
     private static final String QUEUE = "§8VoidFlame §7• §fQueue";
+    private static final String UNRANKED = "§8VoidFlame §7• §fUnranked";
+    private static final String RANKED = "§8VoidFlame §7• §fRanked";
 
     private final Map<UUID, Boolean> settingBusy = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastClicks = new ConcurrentHashMap<>();
@@ -85,6 +87,7 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
             case STATS -> stats(player, inventory);
             case SETTINGS -> settings(player, inventory);
             case QUEUE -> queue(player, inventory);
+            case UNRANKED, RANKED -> kitQueue(player, inventory, title.equals(RANKED));
             default -> {
             }
         }
@@ -203,6 +206,25 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
 
         button(inventory, 22, Material.BARRIER, "§c§lClose", "§7Close this menu.");
         button(inventory, 18, Material.ARROW, "§7§lBack", "§7Return to the main menu.");
+    }
+
+    private void kitQueue(Player player, Inventory inventory, boolean ranked) {
+        inventory.setItem(4, head(player, ranked ? "§5§lRanked Queue" : "§d§lUnranked Queue",
+                ranked ? "§7Choose a kit for competitive matchmaking." : "§7Choose a kit for casual matchmaking.",
+                "",
+                ranked ? "§5ELO matchmaking enabled" : "§dNo ELO changes"));
+
+        button(inventory, 10, Material.IRON_SWORD, "§f§lSword", "§7Classic sword practice.", "", "§dClick §8» §fQueue");
+        button(inventory, 11, Material.IRON_AXE, "§f§lAxe", "§7Axe practice.", "", "§dClick §8» §fQueue");
+        button(inventory, 12, Material.GOLDEN_APPLE, "§e§lUHC", "§7UHC practice.", "", "§dClick §8» §fQueue");
+        button(inventory, 14, Material.MACE, "§b§lMace", "§7Mace practice.", "", "§dClick §8» §fQueue");
+        button(inventory, 15, Material.TRIDENT, "§3§lSpear & Mace", "§7Spear and mace practice.", "", "§dClick §8» §fQueue");
+        button(inventory, 16, Material.END_CRYSTAL, "§c§lCrystal", "§7Crystal practice.", "", "§dClick §8» §fQueue");
+        button(inventory, 19, Material.NETHERITE_SWORD, "§8§lNetherite Pot", "§7Netherite potion practice.", "", "§dClick §8» §fQueue");
+        button(inventory, 20, Material.SHIELD, "§a§lSMP", "§7SMP-style practice.", "", "§dClick §8» §fQueue");
+
+        button(inventory, 18, Material.ARROW, "§7§lBack", "§7Return to the queue menu.");
+        button(inventory, 26, Material.BARRIER, "§c§lClose", "§7Close this menu.");
     }
 
     private void stats(Player player, Inventory inventory) {
@@ -419,8 +441,8 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
 
         if (title.equals(QUEUE)) {
             switch (event.getRawSlot()) {
-                case 10 -> command(player, "queue sword");
-                case 12 -> command(player, "queue ranked sword");
+                case 10 -> open(player, UNRANKED);
+                case 12 -> open(player, RANKED);
                 case 14 -> command(player, "practice");
                 case 16 -> command(player, "party info");
                 case 18 -> open(player, MAIN);
@@ -431,11 +453,30 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
             return;
         }
 
+        if (title.equals(UNRANKED) || title.equals(RANKED)) {
+            boolean ranked = title.equals(RANKED);
+            String prefix = ranked ? "queue ranked " : "queue ";
+            switch (event.getRawSlot()) {
+                case 10 -> command(player, prefix + "sword");
+                case 11 -> command(player, prefix + "axe");
+                case 12 -> command(player, prefix + "uhc");
+                case 14 -> command(player, prefix + "mace");
+                case 15 -> command(player, prefix + "spear_mace");
+                case 16 -> command(player, prefix + "crystal");
+                case 19 -> command(player, prefix + "netherite_pot");
+                case 20 -> command(player, prefix + "smp");
+                case 18 -> open(player, QUEUE);
+                case 26 -> player.closeInventory();
+                default -> {}
+            }
+            return;
+        }
+
         if (title.equals(STATS)) {
             switch (event.getRawSlot()) {
                 case 10, 16 -> command(player, "stats");
                 case 12 -> command(player, "history");
-                case 14 -> command(player, "stats top");
+                case 14 -> command(player, "leaderboard");
                 case 18 -> open(player, MAIN);
                 case 26 -> player.closeInventory();
                 default -> {
