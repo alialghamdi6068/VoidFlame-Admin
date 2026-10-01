@@ -1,7 +1,7 @@
 package net.voidflame.menus;
 
-import net.voidflame.core.storage.StorageService;
 import net.voidflame.core.storage.PlayerSettingsService;
+import net.voidflame.core.storage.StorageService;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -10,26 +10,26 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.plugin.ServicePriority;
+import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
-    private static final String MAIN = "§8VoidFlame";
-    private static final String DUELS = "§8VoidFlame • Duels";
-    private static final String STATS = "§8VoidFlame • Stats";
-    private static final String SETTINGS = "§8VoidFlame • Settings";
+    private static final String MAIN = "§8VoidFlame §7• §fPractice";
+    private static final String DUELS = "§8VoidFlame §7• §fDuels";
+    private static final String STATS = "§8VoidFlame §7• §fStats";
+    private static final String SETTINGS = "§8VoidFlame §7• §fSettings";
+
     private final Map<UUID, Boolean> settingBusy = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastClicks = new ConcurrentHashMap<>();
     private final Map<UUID, Map<String, Boolean>> settingsCache = new ConcurrentHashMap<>();
@@ -37,7 +37,6 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
     private PlayerSettingsService playerSettings;
 
     private record Setting(String key, Material material, String label, boolean defaultValue, String on, String off) {}
-
     private static final List<Setting> SETTINGS_LIST = List.of(
             new Setting("duel_requests", Material.IRON_SWORD, "Duel Requests", true, "Enabled", "Disabled"),
             new Setting("party_invites", Material.CAKE, "Party Invites", true, "Enabled", "Disabled"),
@@ -54,8 +53,8 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
     @Override public void onEnable() {
         saveDefaultConfig();
         var r = getServer().getServicesManager().getRegistration(StorageService.class);
-        var settingsRegistration = getServer().getServicesManager().getRegistration(PlayerSettingsService.class);
-        if (r == null || (storage = r.getProvider()) == null || settingsRegistration == null || (playerSettings = settingsRegistration.getProvider()) == null) {
+        var s = getServer().getServicesManager().getRegistration(PlayerSettingsService.class);
+        if (r == null || (storage = r.getProvider()) == null || s == null || (playerSettings = s.getProvider()) == null) {
             getLogger().severe("VoidFlame-Core storage unavailable.");
             getServer().getPluginManager().disablePlugin(this);
             return;
@@ -64,95 +63,134 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
         getLogger().info("VoidFlame-Menus enabled.");
     }
 
-    public void open(Player p) { open(p, MAIN); }
+    public void open(Player player) { open(player, MAIN); }
 
-    private void open(Player p, String title) {
-        Inventory inv = Bukkit.createInventory(null, 45, title);
-        fill(inv);
-        if (title.equals(MAIN)) {
-            button(inv, 11, Material.DIAMOND_SWORD, "§bDuels", "§7Queue, request and spectate.");
-            button(inv, 13, Material.CHEST, "§aKits", "§7Browse and equip kits.");
-            button(inv, 15, Material.NETHERITE_HELMET, "§eStats", "§7Your profile and leaderboard.");
-            button(inv, 27, Material.NETHER_STAR, "§dPractice", "§7Open practice features.");
-            button(inv, 31, Material.BOOK, "§6Server", "§7Server information.");
-            button(inv, 33, Material.BARRIER, "§cClose");
-            button(inv, 20, Material.COMPARATOR, "§eSettings", "§7Personal settings");
-            button(inv, 22, Material.GOLD_INGOT, "§6Coin Shop", "§7Spend your practice coins.");
-            button(inv, 24, Material.CAKE, "§dParty", "§7Create and manage your party.");
-            button(inv, 26, Material.PAPER, "§cReports", "§7Report and review players.");
-            if (p.hasPermission("voidflame.arena.manage")) button(inv, 28, Material.IRON_BARS, "§bArena Admin", "§7Manage practice arenas.");
-            if (p.hasPermission("voidflame.ranks.admin")) button(inv, 35, Material.NAME_TAG, "§5Rank Admin", "§7Manage ranks and assignments.");
-        } else if (title.equals(DUELS)) {
-            button(inv, 10, Material.DIAMOND_SWORD, "§bUnranked Queue", "§7Join the standard matchmaking queue.", "§8Click to join.");
-            button(inv, 11, Material.NETHER_STAR, "§dRanked Queue", "§7Match by ELO.", "§8Click to join.");
-            button(inv, 13, Material.PAPER, "§fDuel Player", "§7Send a direct duel request.");
-            button(inv, 16, Material.ENDER_EYE, "§dSpectate", "§7Use /spectate <player>.");
-            button(inv, 31, Material.ARROW, "§7Back");
-            button(inv, 33, Material.BARRIER, "§cClose");
-        } else if (title.equals(STATS)) {
-            button(inv, 11, Material.PLAYER_HEAD, "§eMy Stats", "§7Use /stats.");
-            button(inv, 15, Material.GOLD_INGOT, "§6Leaderboard", "§7Use /stats top.");
-            button(inv, 13, Material.CHEST, "§bMatch History", "§7View your recent matches.");
-            button(inv, 31, Material.ARROW, "§7Back");
-            button(inv, 33, Material.BARRIER, "§cClose");
-        } else if (title.equals(SETTINGS)) {
-            button(inv, 10, Material.LIME_DYE, "§aConnection", "§7Connected to server", "§7Status: §aOnline");
-            for (int i = 0; i < SETTINGS_LIST.size(); i++) {
-                Setting s = SETTINGS_LIST.get(i);
-                boolean value = getSetting(p, s);
-                button(inv, 11 + i, s.material(), "§e" + s.label(), "§7Status: " + (value ? "§a" + s.on() : "§c" + s.off()), "§8Click to toggle");
-            }
-            button(inv, 31, Material.ARROW, "§7Back");
-            button(inv, 33, Material.BARRIER, "§cClose");
+    private void open(Player player, String title) {
+        Inventory inv = Bukkit.createInventory(null, 54, title);
+        decorate(inv);
+        switch (title) {
+            case MAIN -> main(player, inv);
+            case DUELS -> duels(inv);
+            case STATS -> stats(inv);
+            case SETTINGS -> settings(player, inv);
+            default -> {}
         }
-        p.openInventory(inv);
+        player.openInventory(inv);
     }
 
-    private void fill(Inventory inv) {
-        ItemStack pane = item(Material.GRAY_STAINED_GLASS_PANE, " ");
-        for (int i = 0; i < inv.getSize(); i++) if (i / 9 == 0 || i / 9 == 4) inv.setItem(i, pane.clone());
+    private void main(Player p, Inventory inv) {
+        inv.setItem(4, head(p, "§d§l" + p.getName(),
+                "§7VoidFlameMC Practice", "", "§fPing: §d" + p.getPing() + "ms",
+                "§fStatus: §aOnline", "", "§8Your practice profile"));
+
+        button(inv, 20, Material.DIAMOND_SWORD, "§b§lUnranked", "§7Casual matchmaking.", "§7Choose a kit after opening.", "§8No rating change");
+        button(inv, 22, Material.NETHER_STAR, "§d§lRanked", "§7Competitive matchmaking.", "§7ELO-based queue.", "§8Climb your rating");
+        button(inv, 24, Material.PLAYER_HEAD, "§6§lParty", "§7Fight with your friends.", "§7Team duels, FFA and more.");
+
+        button(inv, 29, Material.CHEST, "§a§lKits", "§7Browse kits and layouts.", "§eClick to open");
+        button(inv, 31, Material.GOLD_INGOT, "§6§lCoin Shop", "§7Spend your practice coins.", "§eClick to open");
+        button(inv, 33, Material.EMERALD, "§e§lStats", "§7Wins, losses, streak and ELO.", "§eClick to open");
+
+        button(inv, 38, Material.ENDER_EYE, "§d§lPractice", "§7FFA and training.", "§eClick to open");
+        button(inv, 40, Material.BOOK, "§f§lMatch History", "§7Review completed matches.", "§eClick to open");
+        button(inv, 42, Material.COMPARATOR, "§e§lSettings", "§7Personal gameplay settings.", "§eClick to open");
+
+        button(inv, 47, Material.PAPER, "§c§lReports", "§7Report a player.", "§eClick to open");
+        button(inv, 49, Material.NETHER_STAR, "§5§lServer", "§7VoidFlameMC Practice", "§7play.VoidFlame.net");
+        button(inv, 51, Material.BARRIER, "§c§lClose", "§7Close this menu.");
+
+        if (p.hasPermission("voidflame.arena.manage"))
+            button(inv, 45, Material.IRON_BARS, "§b§lArena Admin", "§7Manage practice arenas.");
+        if (p.hasPermission("voidflame.ranks.admin"))
+            button(inv, 53, Material.NAME_TAG, "§5§lRank Admin", "§7Manage ranks and assignments.");
+    }
+
+    private void duels(Inventory inv) {
+        button(inv, 20, Material.DIAMOND_SWORD, "§b§lUnranked Queue", "§7Casual matchmaking.", "§eClick to open queue");
+        button(inv, 22, Material.NETHER_STAR, "§d§lRanked Queue", "§7ELO matchmaking.", "§eClick to open queue");
+        button(inv, 24, Material.PAPER, "§f§lDuel Player", "§7Send a direct duel request.");
+        button(inv, 31, Material.ENDER_EYE, "§d§lSpectate", "§7Watch an active duel.");
+        button(inv, 49, Material.ARROW, "§7§lBack");
+        button(inv, 51, Material.BARRIER, "§c§lClose");
+    }
+
+    private void stats(Inventory inv) {
+        button(inv, 20, Material.PLAYER_HEAD, "§e§lMy Stats", "§7Wins, losses, streak and ELO.", "§eClick to open");
+        button(inv, 22, Material.PAPER, "§b§lMatch History", "§7Recent completed matches.", "§eClick to open");
+        button(inv, 24, Material.GOLD_INGOT, "§6§lLeaderboard", "§7Top players.", "§eClick to open");
+        button(inv, 49, Material.ARROW, "§7§lBack");
+        button(inv, 51, Material.BARRIER, "§c§lClose");
+    }
+
+    private void settings(Player p, Inventory inv) {
+        button(inv, 4, Material.COMPASS, "§e§lSettings", "§7Customize your practice experience.");
+        int[] slots = {19, 21, 23, 25, 28, 30, 32, 34, 37, 39};
+        for (int i = 0; i < SETTINGS_LIST.size(); i++) {
+            Setting s = SETTINGS_LIST.get(i);
+            boolean value = getSetting(p, s);
+            button(inv, slots[i], s.material(), "§f" + s.label(),
+                    "§7Status: " + (value ? "§a" + s.on() : "§c" + s.off()), "§8Click to toggle");
+        }
+        button(inv, 49, Material.ARROW, "§7§lBack");
+        button(inv, 51, Material.BARRIER, "§c§lClose");
+    }
+
+    private void decorate(Inventory inv) {
+        ItemStack border = item(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack accent = item(Material.PURPLE_STAINED_GLASS_PANE, " ");
+        for (int slot = 0; slot < inv.getSize(); slot++) {
+            int row = slot / 9, col = slot % 9;
+            if (row == 0 || row == 5 || col == 0 || col == 8) inv.setItem(slot, border.clone());
+        }
+        for (int slot : new int[]{1,2,3,5,6,7,46,48,50,52}) inv.setItem(slot, accent.clone());
     }
 
     private void button(Inventory inv, int slot, Material material, String name, String... lore) {
         inv.setItem(slot, item(material, name, lore));
     }
 
+    private ItemStack head(Player p, String name, String... lore) {
+        ItemStack stack = new ItemStack(Material.PLAYER_HEAD);
+        if (stack.getItemMeta() instanceof SkullMeta meta) {
+            meta.setOwningPlayer(p);
+            meta.setDisplayName(name);
+            meta.setLore(List.of(lore));
+            stack.setItemMeta(meta);
+        }
+        return stack;
+    }
+
     private ItemStack item(Material material, String name, String... lore) {
         ItemStack stack = new ItemStack(material);
         ItemMeta meta = stack.getItemMeta();
-        if (meta != null) { meta.setDisplayName(name); meta.setLore(List.of(lore)); stack.setItemMeta(meta); }
+        if (meta != null) {
+            meta.setDisplayName(name);
+            meta.setLore(List.of(lore));
+            stack.setItemMeta(meta);
+        }
         return stack;
     }
 
     private boolean getSetting(Player p, Setting s) {
         Map<String, Boolean> values = settingsCache.get(p.getUniqueId());
-        if (values == null) return s.defaultValue();
-        return values.getOrDefault(s.key(), s.defaultValue());
+        return values == null ? s.defaultValue() : values.getOrDefault(s.key(), s.defaultValue());
     }
 
-    private void loadSettings(Player player) {
-        UUID id = player.getUniqueId();
+    private void loadSettings(Player p) {
+        UUID id = p.getUniqueId();
         Map<String, Boolean> values = new ConcurrentHashMap<>();
         settingsCache.put(id, values);
-        for (Setting setting : SETTINGS_LIST) {
-            playerSettings.get(id, setting.key(), setting.defaultValue()).thenAccept(value ->
-                    values.put(setting.key(), value));
-        }
+        for (Setting s : SETTINGS_LIST) playerSettings.get(id, s.key(), s.defaultValue()).thenAccept(v -> values.put(s.key(), v));
     }
 
     private void toggle(Player p, Setting s) {
         if (settingBusy.putIfAbsent(p.getUniqueId(), true) != null) return;
-        boolean current = getSetting(p, s);
-        boolean value = !current;
+        boolean value = !getSetting(p, s);
         playerSettings.set(p.getUniqueId(), s.key(), value).whenComplete((ignored, error) ->
                 Bukkit.getScheduler().runTask(this, () -> {
                     settingBusy.remove(p.getUniqueId());
-                    if (error != null) {
-                        p.sendMessage(ChatColor.RED + "Could not save setting.");
-                        return;
-                    }
-                    settingsCache.computeIfAbsent(p.getUniqueId(), ignoredId -> new ConcurrentHashMap<>())
-                            .put(s.key(), value);
+                    if (error != null) { p.sendMessage(ChatColor.RED + "Could not save setting."); return; }
+                    settingsCache.computeIfAbsent(p.getUniqueId(), id -> new ConcurrentHashMap<>()).put(s.key(), value);
                     open(p, SETTINGS);
                 }));
     }
@@ -162,71 +200,73 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
         Bukkit.dispatchCommand(p, command);
     }
 
-    @EventHandler
-    public void onJoin(PlayerJoinEvent event) {
-        loadSettings(event.getPlayer());
-    }
+    @EventHandler public void onJoin(PlayerJoinEvent e) { loadSettings(e.getPlayer()); }
 
     @EventHandler public void click(InventoryClickEvent e) {
         String title = e.getView().getTitle();
         if (!title.equals(MAIN) && !title.equals(DUELS) && !title.equals(STATS) && !title.equals(SETTINGS)) return;
         e.setCancelled(true);
-        if (!(e.getWhoClicked() instanceof Player p) || e.getRawSlot() >= e.getInventory().getSize()) return;
+        if (!(e.getWhoClicked() instanceof Player p) || e.getRawSlot() < 0 || e.getRawSlot() >= e.getInventory().getSize()) return;
+
         long now = System.currentTimeMillis();
         long cooldown = Math.max(0L, getConfig().getLong("settings.click-cooldown-ms", 250L));
         Long previous = lastClicks.put(p.getUniqueId(), now);
         if (previous != null && now - previous < cooldown) return;
+
         if (title.equals(MAIN)) {
             switch (e.getRawSlot()) {
-                case 11 -> open(p, DUELS);
-                case 13 -> command(p, "kits");
-                case 15 -> open(p, STATS);
-                case 20 -> open(p, SETTINGS);
-                case 22 -> command(p, "coinshop");
+                case 20 -> command(p, "queue sword");
+                case 22 -> command(p, "queue ranked sword");
                 case 24 -> command(p, "party info");
-                case 26 -> command(p, p.hasPermission("voidflame.report.view") ? "reports" : "report");
-                case 27 -> command(p, "practice");
-                case 28 -> { if (p.hasPermission("voidflame.arena.manage")) command(p, "arena list"); }
-                case 35 -> { if (p.hasPermission("voidflame.ranks.admin")) command(p, "ranks"); }
-                case 31 -> { p.sendMessage("§bVoidFlameMC §fPractice Server"); p.sendMessage("§7Use §f/menu §7to open this menu."); p.sendMessage("§7Use §f/queue §7to join a duel queue."); p.sendMessage("§7Use §f/stats §7to view your statistics."); p.sendMessage("§8§m--------------------"); }
-                case 33 -> p.closeInventory();
+                case 29 -> command(p, "kits");
+                case 31 -> command(p, "coinshop");
+                case 33 -> open(p, STATS);
+                case 38 -> command(p, "practice");
+                case 40 -> command(p, "history");
+                case 42 -> open(p, SETTINGS);
+                case 45 -> { if (p.hasPermission("voidflame.arena.manage")) command(p, "arena list"); }
+                case 47 -> command(p, p.hasPermission("voidflame.report.view") ? "reports" : "report");
+                case 49 -> {
+                    p.sendMessage("§d§lVoidFlameMC §8• §fPractice");
+                    p.sendMessage("§7Server: §fplay.VoidFlame.net");
+                    p.sendMessage("§7Queue: §f/queue §8• §7Duels: §f/duel §8• §7Stats: §f/stats");
+                }
+                case 51 -> p.closeInventory();
+                case 53 -> { if (p.hasPermission("voidflame.ranks.admin")) command(p, "ranks"); }
                 default -> {}
             }
         } else if (title.equals(DUELS)) {
             switch (e.getRawSlot()) {
-                case 10 -> command(p, "queue sword");
-                case 11 -> command(p, "queue ranked sword");
-                case 13 -> command(p, "duel");
-                case 16 -> command(p, "spectate");
-                case 31 -> open(p, MAIN);
-                case 33 -> p.closeInventory();
+                case 20 -> command(p, "queue sword");
+                case 22 -> command(p, "queue ranked sword");
+                case 24 -> command(p, "duel");
+                case 31 -> command(p, "spectate");
+                case 49 -> open(p, MAIN);
+                case 51 -> p.closeInventory();
                 default -> {}
             }
         } else if (title.equals(STATS)) {
             switch (e.getRawSlot()) {
-                case 11 -> command(p, "stats");
-                case 13 -> command(p, "history");
-                case 15 -> command(p, "stats top");
-                case 31 -> open(p, MAIN);
-                case 33 -> p.closeInventory();
+                case 20 -> command(p, "stats");
+                case 22 -> command(p, "history");
+                case 24 -> command(p, "stats top");
+                case 49 -> open(p, MAIN);
+                case 51 -> p.closeInventory();
                 default -> {}
             }
         } else {
-            if (e.getRawSlot() >= 11 && e.getRawSlot() < 11 + SETTINGS_LIST.size()) {
-                toggle(p, SETTINGS_LIST.get(e.getRawSlot() - 11));
-            } else if (e.getRawSlot() == 31) {
-                open(p, MAIN);
-            } else if (e.getRawSlot() == 33) {
-                p.closeInventory();
-            }
+            int[] slots = {19,21,23,25,28,30,32,34,37,39};
+            for (int i = 0; i < slots.length; i++) if (e.getRawSlot() == slots[i]) { toggle(p, SETTINGS_LIST.get(i)); return; }
+            if (e.getRawSlot() == 49) open(p, MAIN);
+            else if (e.getRawSlot() == 51) p.closeInventory();
         }
     }
 
-    @EventHandler
-    public void onQuit(PlayerQuitEvent event) {
-        settingsCache.remove(event.getPlayer().getUniqueId());
-        settingBusy.remove(event.getPlayer().getUniqueId());
-        lastClicks.remove(event.getPlayer().getUniqueId());
+    @EventHandler public void onQuit(PlayerQuitEvent e) {
+        UUID id = e.getPlayer().getUniqueId();
+        settingsCache.remove(id);
+        settingBusy.remove(id);
+        lastClicks.remove(id);
     }
 
     @Override public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
