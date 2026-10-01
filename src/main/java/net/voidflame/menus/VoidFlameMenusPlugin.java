@@ -92,6 +92,7 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
         } else if (title.equals(STATS)) {
             button(inv, 11, Material.PLAYER_HEAD, "§eMy Stats", "§7Use /stats.");
             button(inv, 15, Material.GOLD_INGOT, "§6Leaderboard", "§7Use /stats top.");
+            button(inv, 13, Material.CHEST, "§bMatch History", "§7View your recent matches.");
             button(inv, 31, Material.ARROW, "§7Back");
             button(inv, 33, Material.BARRIER, "§cClose");
         } else if (title.equals(SETTINGS)) {
@@ -203,6 +204,7 @@ public final class VoidFlameMenusPlugin extends JavaPlugin implements Listener {
         } else if (title.equals(STATS)) {
             switch (e.getRawSlot()) {
                 case 11 -> command(p, "stats");
+                case 13 -> command(p, "history");
                 case 15 -> command(p, "stats top");
                 case 31 -> open(p, MAIN);
                 case 33 -> p.closeInventory();
