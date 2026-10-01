@@ -28,3 +28,4 @@ navigation:
   confirm-enabled: true
   cancel-enabled: true
   invalid-action-message: true
+# maintenance: final integration build against latest VoidFlame-Core
