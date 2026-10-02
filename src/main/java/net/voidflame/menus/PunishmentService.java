@@ -129,19 +129,33 @@ final class PunishmentService implements Listener {
 
     private CompletableFuture<Boolean> hierarchyAllowed(Player actor, UUID target) {
         if (actor.hasPermission("voidflame.admin.full")) return CompletableFuture.completedFuture(true);
-        return query("SELECT COALESCE((SELECT CAST(substr(data_value, 1, 64) AS TEXT) FROM module_data WHERE module='ranks' AND data_key=?), 'member') AS actor_rank, " +
-                "COALESCE((SELECT CAST(substr(data_value, 1, 64) AS TEXT) FROM module_data WHERE module='ranks' AND data_key=?), 'member') AS target_rank",
-                "player." + actor.getUniqueId(), "player." + target).thenCompose(rows -> {
-            if (rows.isEmpty()) return CompletableFuture.completedFuture(false);
-            String actorRank = String.valueOf(rows.get(0).get("actor_rank"));
-            String targetRank = String.valueOf(rows.get(0).get("target_rank"));
-            return query("SELECT COALESCE((SELECT weight FROM ranks WHERE rank_id=?), 100) AS actor_weight, " +
-                    "COALESCE((SELECT weight FROM ranks WHERE rank_id=?), 100) AS target_weight", actorRank, targetRank);
-        }).thenApply(rows -> {
-            if (rows.isEmpty()) return true;
-            Number a = (Number) rows.get(0).get("actor_weight");
-            Number t = (Number) rows.get(0).get("target_weight");
-            return a == null || t == null || a.intValue() > t.intValue();
+        CompletableFuture<List<Map<String,Object>>> actorRank = query(
+                "SELECT data_value FROM module_data WHERE module='ranks' AND data_key=?",
+                "player." + actor.getUniqueId());
+        CompletableFuture<List<Map<String,Object>>> targetRank = query(
+                "SELECT data_value FROM module_data WHERE module='ranks' AND data_key=?",
+                "player." + target);
+        return actorRank.thenCombine(targetRank, (aRows, tRows) -> {
+            String a = aRows.isEmpty() ? "member" : String.valueOf(aRows.get(0).get("data_value")).toLowerCase(Locale.ROOT);
+            String t = tRows.isEmpty() ? "member" : String.valueOf(tRows.get(0).get("data_value")).toLowerCase(Locale.ROOT);
+            return new String[]{a, t};
+        }).thenCompose(ranks -> query(
+                "SELECT data_key,data_value FROM module_data WHERE module='ranks' AND (data_key=? OR data_key=?)",
+                "rank." + ranks[0], "rank." + ranks[1])
+        ).thenApply(rows -> {
+            Map<String,Integer> weights = new HashMap<>();
+            for (Map<String,Object> row : rows) {
+                String key = String.valueOf(row.get("data_key"));
+                String value = String.valueOf(row.get("data_value"));
+                String[] parts = value.split("\\|", -1);
+                if (parts.length >= 4) {
+                    try { weights.put(key.substring("rank.".length()), Integer.parseInt(parts[3])); }
+                    catch (NumberFormatException ignored) {}
+                }
+            }
+            int actorWeight = weights.getOrDefault(ranks[0], 100);
+            int targetWeight = weights.getOrDefault(ranks[1], 100);
+            return actorWeight > targetWeight;
         });
     }
 
