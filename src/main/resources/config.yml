@@ -46,7 +46,7 @@ integrations:
   menus:
     command: "practice"
   logs:
-    command: "logs"
+    command: "vflogs"
   security:
     command: "antibot status"
   settings:
