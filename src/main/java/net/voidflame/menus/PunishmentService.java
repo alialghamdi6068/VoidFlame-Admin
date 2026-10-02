@@ -19,6 +19,7 @@ final class PunishmentService implements Listener {
     private Object storage;
     private final Set<UUID> banned = ConcurrentHashMap.newKeySet();
     private final Set<UUID> muted = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, PendingPunishment> pending = new ConcurrentHashMap<>();
 
     PunishmentService(VoidFlameMenusPlugin plugin) {
         this.plugin = plugin;
@@ -28,6 +29,23 @@ final class PunishmentService implements Listener {
     }
 
     boolean execute(Player actor, String[] args) {
+        if (args.length > 0 && args[0].equalsIgnoreCase("confirm")) {
+            PendingPunishment request = pending.remove(actor.getUniqueId());
+            if (request == null) {
+                actor.sendMessage(color("&cThere is no pending punishment to confirm."));
+                return true;
+            }
+            return executeParsed(actor, request.args(), true);
+        }
+        if (args.length > 0 && args[0].equalsIgnoreCase("cancel")) {
+            pending.remove(actor.getUniqueId());
+            actor.sendMessage(color("&7Pending punishment cancelled."));
+            return true;
+        }
+        return executeParsed(actor, args, false);
+    }
+
+    private boolean executeParsed(Player actor, String[] args, boolean confirmed) {
         if (!plugin.getConfig().getBoolean("punishments.enabled", true)) {
             actor.sendMessage(color("&cPunishments are disabled."));
             return true;
@@ -80,6 +98,18 @@ final class PunishmentService implements Listener {
         }
 
         String type = action.toUpperCase(Locale.ROOT);
+
+        boolean destructive = Set.of("ban", "tempban", "mute", "tempmute", "kick").contains(action);
+        if (!confirmed && destructive && plugin.getConfig().getBoolean("punishments.require-confirmation", true)) {
+            pending.put(actor.getUniqueId(), new PendingPunishment(args.clone(), System.currentTimeMillis()));
+            actor.sendMessage(color("&6&lCONFIRM PUNISHMENT"));
+            actor.sendMessage(color("&7Action: &f" + type + " &7| Target: &f" + targetName));
+            actor.sendMessage(color("&7Reason: &f" + reason));
+            if (durationToken != null) actor.sendMessage(color("&7Duration: &f" + durationToken));
+            actor.sendMessage(color("&e/vfadmin punish confirm &7to apply, or &c/vfadmin punish cancel &7to cancel."));
+            return true;
+        }
+
         hierarchyAllowed(actor, targetId).thenAccept(allowed -> Bukkit.getScheduler().runTask(plugin, () -> {
             if (!allowed) {
                 actor.sendMessage(color("&cYou cannot punish a player with an equal or higher staff rank."));
@@ -204,7 +234,11 @@ final class PunishmentService implements Listener {
         p.sendMessage(color("&d/vfadmin punish kick <player> [reason]"));
         p.sendMessage(color("&d/vfadmin punish history <player>"));
         p.sendMessage(color("&d/vfadmin punish unpunish <player>"));
+        p.sendMessage(color("&e/vfadmin punish confirm"));
+        p.sendMessage(color("&c/vfadmin punish cancel"));
     }
+
+    private record PendingPunishment(String[] args, long createdAt) {}
 
     private long parseDuration(String token) {
         try {
