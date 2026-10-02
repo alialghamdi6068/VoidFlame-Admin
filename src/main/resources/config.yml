@@ -27,28 +27,32 @@ settings:
   kick-all-except-staff: true
 
 integrations:
+  # ZonePractice Pro admin entry points. These commands open its native GUIs/controls;
+  # VoidFlame Admin does not duplicate the Practice engine.
   duels:
-    command: "duels"
+    command: "setup"
   kits:
-    command: "kit admin"
+    command: "editor"
   arenas:
     command: "arena"
   queues:
-    command: "duels"
+    command: "practice"
   ffa:
-    command: "ffa"
+    command: "practice"
   rewards:
     command: "coinshop"
   ranks:
     command: "ranks"
   menus:
-    command: "duels"
+    command: "practice"
   logs:
     command: "logs"
   security:
     command: "antibot status"
   settings:
     command: "settings"
+  players:
+    command: "staffgui"
   worlds:
     command: "vfworld list"
   database:
