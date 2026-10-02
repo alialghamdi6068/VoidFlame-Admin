@@ -29,6 +29,8 @@ public final class VoidFlameMenusPlugin extends JavaPlugin {
         if (staffGui != null) staffGui.onDisable();
     }
 
+    PunishmentService punishments() { return punishments; }
+
     void audit(String actor, String action) {
         if (audit != null && getConfig().getBoolean("logging.file.enabled", true)) audit.log(actor, action);
     }
