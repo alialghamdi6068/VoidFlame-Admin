@@ -16,7 +16,10 @@ commands:
   staff:
     description: Open the VoidFlame staff control panel.
     usage: /staff
-    aliases: [staffgui]
+    permission: voidflame.staff
+  staffgui:
+    description: Open the VoidFlame staff control panel.
+    usage: /staffgui
     permission: voidflame.staff
 
 permissions:
