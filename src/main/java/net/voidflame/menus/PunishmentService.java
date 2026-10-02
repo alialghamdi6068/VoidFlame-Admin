@@ -42,7 +42,7 @@ final class PunishmentService implements Listener {
         }
 
         String action = args[0].toLowerCase(Locale.ROOT);
-        if (action.equals("history")) return history(actor, args);
+        if (action.equals("history")) { history(actor, args); return true; }
         if (action.equals("unpunish") || action.equals("unban") || action.equals("unmute")) return unpunish(actor, args);
         if (!Set.of("ban", "tempban", "mute", "tempmute", "warn", "kick").contains(action)) {
             help(actor);
@@ -127,10 +127,10 @@ final class PunishmentService implements Listener {
         }
     }
 
-    private CompletableFuture<List<Map<String,Object>>> history(Player actor, String[] args) {
+    private CompletableFuture<Void> history(Player actor, String[] args) {
         if (args.length < 2) {
             actor.sendMessage(color("&cUsage: /vfadmin punish history <player>"));
-            return CompletableFuture.completedFuture(List.of());
+            return CompletableFuture.completedFuture(null);
         }
         OfflinePlayer target = Bukkit.getOfflinePlayer(args[1]);
         return query("SELECT type,actor_name,reason,created_at,expires_at,active FROM punishments WHERE uuid=? ORDER BY created_at DESC LIMIT 50",
