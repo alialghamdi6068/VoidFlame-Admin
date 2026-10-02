@@ -1,7 +1,7 @@
 name: VoidFlame-Admin
 version: 1.0.0
 main: net.voidflame.menus.VoidFlameMenusPlugin
-description: Unified VoidFlame administration, staff controls and menu framework.
+description: Unified VoidFlame administration, staff controls, server metrics and audit logging.
 author: VoidFlame
 website: https://github.com/alialghamdi6068/VoidFlame-Admin
 api-version: '26.2'
@@ -11,7 +11,11 @@ softdepend: [VoidFlame-Core, VoidFlame-Kits, VoidFlame-Arenas, VoidFlame-Ranks, 
 commands:
   vfadmin:
     description: Open the unified VoidFlame administration panel.
-    usage: /vfadmin
+    usage: /vfadmin [status|metrics|tps|reload]
+  vfstatus:
+    description: Show protected VoidFlame server performance metrics.
+    usage: /vfstatus
+    permission: voidflame.admin
   staff:
     description: Open the VoidFlame staff control panel.
     usage: /staff
@@ -23,7 +27,7 @@ commands:
 
 permissions:
   voidflame.admin:
-    description: Open the central VoidFlame administration console.
+    description: Open the central VoidFlame administration console and status tools.
     default: false
   voidflame.admin.full:
     description: Full unrestricted access to the central administration console.
@@ -66,6 +70,12 @@ permissions:
     default: false
   voidflame.admin.database:
     description: Manage Core database backup/recovery.
+    default: false
+  voidflame.admin.punishments:
+    description: Issue and manage player punishments.
+    default: false
+  voidflame.admin.metrics:
+    description: View server TPS, memory, CPU and runtime metrics.
     default: false
   voidflame.staff:
     description: Staff control access.
