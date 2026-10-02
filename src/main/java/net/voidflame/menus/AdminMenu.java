@@ -62,12 +62,12 @@ public final class AdminMenu implements Listener {
             case 25 -> "reload";
             default -> null;
         };
-        if (command == null) return;
         if (slot == 28) {
             p.closeInventory();
             Bukkit.getScheduler().runTask(plugin, () -> new StaffGui(plugin).openMain(p));
             return;
         }
+        if (command == null) return;
         p.closeInventory();
         Bukkit.getScheduler().runTask(plugin, () -> p.performCommand(command));
     }
