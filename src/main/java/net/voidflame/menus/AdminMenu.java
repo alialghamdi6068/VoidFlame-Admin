@@ -46,19 +46,19 @@ public final class AdminMenu implements Listener {
 
     private void action(Player p, int slot) {
         String command = switch (slot) {
-            case 10 -> "kit admin";
-            case 11 -> "arena";
-            case 12 -> "duels";
-            case 13 -> "duels";
-            case 14 -> "ffa";
-            case 15 -> "ranks";
-            case 16 -> "duels";
-            case 19 -> "coinshop";
-            case 20 -> "ranks";
-            case 21 -> "antibot status";
-            case 22 -> "settings";
-            case 23 -> "vfworld list";
-            case 24 -> "vfrestore";
+            case 10 -> plugin.getConfig().getString("integrations.kits.command", "kit admin");
+            case 11 -> plugin.getConfig().getString("integrations.arenas.command", "arena");
+            case 12 -> plugin.getConfig().getString("integrations.duels.command", "duels");
+            case 13 -> plugin.getConfig().getString("integrations.queues.command", "duels");
+            case 14 -> plugin.getConfig().getString("integrations.ffa.command", "ffa");
+            case 15 -> plugin.getConfig().getString("integrations.ranks.command", "ranks");
+            case 16 -> plugin.getConfig().getString("integrations.duels.command", "duels");
+            case 19 -> plugin.getConfig().getString("integrations.rewards.command", "coinshop");
+            case 20 -> plugin.getConfig().getString("integrations.ranks.command", "ranks");
+            case 21 -> plugin.getConfig().getString("integrations.security.command", "antibot status");
+            case 22 -> plugin.getConfig().getString("integrations.settings.command", "settings");
+            case 23 -> plugin.getConfig().getString("integrations.worlds.command", "vfworld list");
+            case 24 -> plugin.getConfig().getString("integrations.database.command", "vfrestore");
             case 25 -> "vfadmin reload";
             default -> null;
         };
