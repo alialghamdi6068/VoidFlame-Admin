@@ -20,7 +20,9 @@ import org.bukkit.enchantments.Enchantment;
 
 import java.util.*;
 
-public final class StaffGui extends JavaPlugin implements Listener, CommandExecutor {
+public final class StaffGui implements Listener, CommandExecutor {
+    private final VoidFlameMenusPlugin plugin;
+    public StaffGui(VoidFlameMenusPlugin plugin) { this.plugin = plugin; }
     private final Map<UUID, UUID> targets = new HashMap<>();
     private final Map<UUID, Long> confirmations = new HashMap<>();
     private final Map<UUID, Action> pending = new HashMap<>();
@@ -31,23 +33,23 @@ public final class StaffGui extends JavaPlugin implements Listener, CommandExecu
 
     enum Action { CLEAR_INV, KICK_ALL, STOP, REMOVE_WORLD }
 
-    @Override public void onEnable() {
-        saveDefaultConfig();
+    public void onEnable() {
+        plugin.saveDefaultConfig();
         loadState();
-        getCommand("staff").setExecutor(this);
-        getCommand("staffgui").setExecutor(this);
-        Bukkit.getPluginManager().registerEvents(this, this);
-        getServer().getScheduler().runTaskTimer(this, this::enforceLocks, 1L, 20L);
-        getLogger().info("VoidFlame Staff GUI enabled.");
+        plugin.getCommand("staff").setExecutor(this);
+        plugin.getCommand("staffgui").setExecutor(this);
+        Bukkit.getPluginManager().registerEvents(this, plugin);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, this::enforceLocks, 1L, 20L);
+        plugin.plugin.getLogger().info("VoidFlame Staff GUI enabled.");
     }
 
-    @Override public void onDisable() {
+    public void onDisable() {
         targets.clear(); confirmations.clear(); pending.clear();
         saveState();
     }
 
     private void loadState() {
-        flags.put("pvp", getConfig().getBoolean("flags.pvp", true));
+        flags.put("pvp", plugin.getConfig().getBoolean("flags.pvp", true));
         flags.put("block-place", getConfig().getBoolean("flags.block-place", true));
         flags.put("mob-spawning", getConfig().getBoolean("flags.mob-spawning", true));
         lockTime=getConfig().getBoolean("time-weather.lock-time",false);
@@ -62,7 +64,7 @@ public final class StaffGui extends JavaPlugin implements Listener, CommandExecu
         getConfig().set("time-weather.lock-weather",lockWeather);
         getConfig().set("time-weather.time",lockedTime);
         getConfig().set("time-weather.storm",storm);
-        saveConfig();
+        plugin.saveConfig();
     }
 
     @Override public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
