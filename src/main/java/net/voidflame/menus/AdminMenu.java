@@ -118,7 +118,7 @@ public final class AdminMenu implements Listener {
             }
             case "management" -> {
                 if(slot==10) route(p,"voidflame.admin.ranks","integrations.ranks");
-                else if(slot==11) route(p,"voidflame.admin.players","integrations.ranks");
+                else if(slot==11) route(p,"voidflame.admin.players","integrations.players");
                 else if(slot==12) route(p,"voidflame.admin.menus","integrations.menus");
                 else if(slot==13) route(p,"voidflame.admin.logs","integrations.logs");
                 else if(slot==14) route(p,"voidflame.admin.settings","integrations.settings");
