@@ -87,7 +87,7 @@ public final class StaffGui extends JavaPlugin implements Listener, CommandExecu
     }
     private void put(Inventory i,int slot,Material m,String name,String... lore){if(slot<i.getSize())i.setItem(slot,item(m,name,lore));}
 
-    private void openMain(Player p) {
+    public void openMain(Player p) {
         Inventory i=gui("main",6,"&8VoidFlame &5Staff Control");
         put(i,10,Material.GOLDEN_APPLE,"&6Heal Me","Restore health, remove fire, refill hunger.");
         put(i,11,Material.COMMAND_BLOCK,"&bGamemode","Survival / Creative / Adventure / Spectator.");
