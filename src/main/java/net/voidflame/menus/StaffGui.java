@@ -38,7 +38,7 @@ public final class StaffGui implements Listener {
         loadState();
         Bukkit.getPluginManager().registerEvents(this, plugin);
         plugin.getServer().getScheduler().runTaskTimer(plugin, this::enforceLocks, 1L, 20L);
-        plugin.plugin.getLogger().info("VoidFlame Staff GUI enabled.");
+        plugin.getLogger().info("VoidFlame Staff GUI enabled.");
     }
 
     public void onDisable() {
