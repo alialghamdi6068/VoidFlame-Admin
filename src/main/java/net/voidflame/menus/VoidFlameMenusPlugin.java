@@ -4,13 +4,17 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public final class VoidFlameMenusPlugin extends JavaPlugin {
     private StaffGui staffGui;
+    private AdminAudit audit;
 
     @Override
     public void onEnable() {
+        saveDefaultConfig();
+        audit = new AdminAudit(this);
         getCommand("vfadmin").setExecutor(new AdminCommand(this));
+        getCommand("vfadmin").setTabCompleter(new AdminCommand(this));
+        getCommand("vfstatus").setExecutor(new MetricsCommand(this));
         getCommand("staff").setExecutor(new StaffCommand(this));
         getCommand("staffgui").setExecutor(new StaffCommand(this));
-        saveDefaultConfig();
         getServer().getPluginManager().registerEvents(new AdminMenu(this), this);
         staffGui = new StaffGui(this);
         staffGui.onEnable();
@@ -20,5 +24,9 @@ public final class VoidFlameMenusPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         if (staffGui != null) staffGui.onDisable();
+    }
+
+    void audit(String actor, String action) {
+        if (audit != null && getConfig().getBoolean("logging.file.enabled", true)) audit.log(actor, action);
     }
 }
