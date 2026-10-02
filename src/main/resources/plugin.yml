@@ -12,7 +12,6 @@ commands:
   vfadmin:
     description: Open the unified VoidFlame administration panel.
     usage: /vfadmin
-    permission: voidflame.admin
   staff:
     description: Open the VoidFlame staff control panel.
     usage: /staff
