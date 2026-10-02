@@ -16,6 +16,11 @@ public final class AdminCommand implements CommandExecutor {
             player.sendMessage(ChatColor.RED + "You do not have permission.");
             return true;
         }
+        if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
+            plugin.reloadConfig();
+            player.sendMessage(ChatColor.GREEN + "VoidFlame Admin configuration reloaded.");
+            return true;
+        }
         new AdminMenu(plugin).open(player);
         return true;
     }
