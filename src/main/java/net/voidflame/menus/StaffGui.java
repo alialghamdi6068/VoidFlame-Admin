@@ -38,7 +38,7 @@ public final class StaffGui implements Listener {
         loadState();
         Bukkit.getPluginManager().registerEvents(this, plugin);
         plugin.getServer().getScheduler().runTaskTimer(plugin, this::enforceLocks, 1L, 20L);
-        plugin.plugin.getLogger().info("VoidFlame Staff GUI enabled.");
+        plugin.plugin.plugin.getLogger().info("VoidFlame Staff GUI enabled.");
     }
 
     public void onDisable() {
@@ -47,27 +47,27 @@ public final class StaffGui implements Listener {
     }
 
     private void loadState() {
-        flags.put("pvp", plugin.getConfig().getBoolean("flags.pvp", true));
-        flags.put("block-place", getConfig().getBoolean("flags.block-place", true));
-        flags.put("mob-spawning", getConfig().getBoolean("flags.mob-spawning", true));
-        lockTime=getConfig().getBoolean("time-weather.lock-time",false);
-        lockWeather=getConfig().getBoolean("time-weather.lock-weather",false);
-        lockedTime=getConfig().getLong("time-weather.time",6000L);
-        storm=getConfig().getBoolean("time-weather.storm",false);
+        flags.put("pvp", plugin.plugin.getConfig().getBoolean("flags.pvp", true));
+        flags.put("block-place", plugin.getConfig().getBoolean("flags.block-place", true));
+        flags.put("mob-spawning", plugin.getConfig().getBoolean("flags.mob-spawning", true));
+        lockTime=plugin.getConfig().getBoolean("time-weather.lock-time",false);
+        lockWeather=plugin.getConfig().getBoolean("time-weather.lock-weather",false);
+        lockedTime=plugin.getConfig().getLong("time-weather.time",6000L);
+        storm=plugin.getConfig().getBoolean("time-weather.storm",false);
     }
 
     private void saveState() {
-        flags.forEach((k,v)->getConfig().set("flags."+k,v));
-        getConfig().set("time-weather.lock-time",lockTime);
-        getConfig().set("time-weather.lock-weather",lockWeather);
-        getConfig().set("time-weather.time",lockedTime);
-        getConfig().set("time-weather.storm",storm);
+        flags.forEach((k,v)->plugin.getConfig().set("flags."+k,v));
+        plugin.getConfig().set("time-weather.lock-time",lockTime);
+        plugin.getConfig().set("time-weather.lock-weather",lockWeather);
+        plugin.getConfig().set("time-weather.time",lockedTime);
+        plugin.getConfig().set("time-weather.storm",storm);
         plugin.saveConfig();
     }
 
     private Inventory gui(String type,int rows,String title) {
         Inventory i=Bukkit.createInventory(new Holder(type),rows*9,color(title));
-        Material filler=Material.matchMaterial(getConfig().getString("gui.filler","BLACK_STAINED_GLASS_PANE"));
+        Material filler=Material.matchMaterial(plugin.getConfig().getString("gui.filler","BLACK_STAINED_GLASS_PANE"));
         if(filler==null) filler=Material.BLACK_STAINED_GLASS_PANE;
         ItemStack pane=item(filler," ");
         for(int n=0;n<i.getSize();n++) i.setItem(n,pane);
@@ -201,7 +201,7 @@ public final class StaffGui implements Listener {
     private void gamemode(Player p,int s){Player t=target(p);if(s==15){openMain(p);return;}if(t==null)return;GameMode g=s==10?GameMode.SURVIVAL:s==11?GameMode.CREATIVE:s==12?GameMode.ADVENTURE:s==13?GameMode.SPECTATOR:null;if(g!=null){t.setGameMode(g);done(p,"Gamemode");openMain(p);}}
 
     private void openSpeed(Player p){Inventory i=gui("speed",3,"&8Speed Controls");put(i,10,Material.SUGAR,"&fWalk Speed","Click to increase; wraps at max.");put(i,11,Material.FEATHER,"&fFly Speed","Click to increase; wraps at max.");put(i,12,Material.REDSTONE,"&7Reset Speeds");put(i,15,Material.ARROW,"&7Back");p.openInventory(i);}
-    private void speed(Player p,int s){Player t=target(p);if(s==15){openMain(p);return;}if(t==null)return;float step=(float)getConfig().getDouble("settings.speed-step",0.1),max=(float)getConfig().getDouble("settings.max-speed",1.0);if(s==10)t.setWalkSpeed(next(t.getWalkSpeed(),step,max));else if(s==11)t.setFlySpeed(next(t.getFlySpeed(),step,max));else if(s==12){t.setWalkSpeed(0.2f);t.setFlySpeed(0.1f);}done(p,"Speed");openMain(p);}
+    private void speed(Player p,int s){Player t=target(p);if(s==15){openMain(p);return;}if(t==null)return;float step=(float)plugin.getConfig().getDouble("settings.speed-step",0.1),max=(float)plugin.getConfig().getDouble("settings.max-speed",1.0);if(s==10)t.setWalkSpeed(next(t.getWalkSpeed(),step,max));else if(s==11)t.setFlySpeed(next(t.getFlySpeed(),step,max));else if(s==12){t.setWalkSpeed(0.2f);t.setFlySpeed(0.1f);}done(p,"Speed");openMain(p);}
     private float next(float cur,float step,float max){return cur>=max-0.001?0.1f:Math.min(max,cur+step);}
 
     private void openPotions(Player p){Inventory i=gui("potions",3,"&8Potion Effects");put(i,10,Material.SUGAR,"&aSpeed II","2 minutes");put(i,11,Material.IRON_CHESTPLATE,"&cResistance II","2 minutes");put(i,12,Material.FEATHER,"&bJump Boost II","2 minutes");put(i,13,Material.GLOWSTONE_DUST,"&eHaste II","2 minutes");put(i,14,Material.MILK_BUCKET,"&fClear Effects");put(i,15,Material.ARROW,"&7Back");p.openInventory(i);}
@@ -249,11 +249,11 @@ public final class StaffGui implements Listener {
     @EventHandler public void mobs(CreatureSpawnEvent e){if(!flags.getOrDefault("mob-spawning",true)&&e.getSpawnReason()==CreatureSpawnEvent.SpawnReason.NATURAL)e.setCancelled(true);}
 
     private void confirm(Player p,Action a){if((a==Action.CLEAR_INV||a==Action.KICK_ALL||a==Action.STOP)&&!p.hasPermission("voidflame.staff.admin")){msg(p,"no-permission");return;}pending.put(p.getUniqueId(),a);confirmations.put(p.getUniqueId(),System.currentTimeMillis()+15000);Inventory i=gui("confirm",3,"&8Confirm Action");put(i,11,Material.LIME_CONCRETE,"&aConfirm");put(i,15,Material.RED_CONCRETE,"&cCancel");p.openInventory(i);}
-    private void confirm(Player p,int s){if(s==15){pending.remove(p.getUniqueId());confirmations.remove(p.getUniqueId());openMain(p);return;}if(s!=11)return;Long until=confirmations.get(p.getUniqueId());Action a=pending.get(p.getUniqueId());if(until==null||until<System.currentTimeMillis()||a==null){openMain(p);return;}pending.remove(p.getUniqueId());confirmations.remove(p.getUniqueId());Player t=target(p);switch(a){case CLEAR_INV -> {if(t!=null)t.getInventory().clear();done(p,"Clear Inventory");}case KICK_ALL -> {for(Player x:Bukkit.getOnlinePlayers())if(!x.equals(p)&&(!plugin.getConfig().getBoolean("settings.kick-all-except-staff",true)||!x.hasPermission("voidflame.staff")))x.kickPlayer(color("&cRemoved by staff."));done(p,"Kick All Players");}case STOP -> {done(p,"Stop Server");Bukkit.shutdown();}case REMOVE_WORLD -> { } }if(Bukkit.isPrimaryThread()&&!a.equals(Action.STOP))openMain(p);}
+    private void confirm(Player p,int s){if(s==15){pending.remove(p.getUniqueId());confirmations.remove(p.getUniqueId());openMain(p);return;}if(s!=11)return;Long until=confirmations.get(p.getUniqueId());Action a=pending.get(p.getUniqueId());if(until==null||until<System.currentTimeMillis()||a==null){openMain(p);return;}pending.remove(p.getUniqueId());confirmations.remove(p.getUniqueId());Player t=target(p);switch(a){case CLEAR_INV -> {if(t!=null)t.getInventory().clear();done(p,"Clear Inventory");}case KICK_ALL -> {for(Player x:Bukkit.getOnlinePlayers())if(!x.equals(p)&&(!plugin.plugin.getConfig().getBoolean("settings.kick-all-except-staff",true)||!x.hasPermission("voidflame.staff")))x.kickPlayer(color("&cRemoved by staff."));done(p,"Kick All Players");}case STOP -> {done(p,"Stop Server");Bukkit.shutdown();}case REMOVE_WORLD -> { } }if(Bukkit.isPrimaryThread()&&!a.equals(Action.STOP))openMain(p);}
 
-    private void clearChat(Player p){if(!p.hasPermission("voidflame.staff.admin")){msg(p,"no-permission");return;}int lines=plugin.getConfig().getInt("settings.clear-chat-lines",100);for(Player x:Bukkit.getOnlinePlayers())for(int n=0;n<lines;n++)x.sendMessage(" ");done(p,"Clear Chat");openMain(p);}
-    private void done(Player p,String a){plugin.getLogger().info("Staff action: "+p.getName()+" -> "+a+(target(p)==null?"":" -> "+target(p).getName()));p.sendMessage(color(plugin.getConfig().getString("messages.action","&aAction completed: &f%action%").replace("%action%",a)));}
-    private void msg(Player p,String k){p.sendMessage(color(plugin.getConfig().getString("messages."+k,k)));}
+    private void clearChat(Player p){if(!p.hasPermission("voidflame.staff.admin")){msg(p,"no-permission");return;}int lines=plugin.plugin.getConfig().getInt("settings.clear-chat-lines",100);for(Player x:Bukkit.getOnlinePlayers())for(int n=0;n<lines;n++)x.sendMessage(" ");done(p,"Clear Chat");openMain(p);}
+    private void done(Player p,String a){plugin.plugin.getLogger().info("Staff action: "+p.getName()+" -> "+a+(target(p)==null?"":" -> "+target(p).getName()));p.sendMessage(color(plugin.plugin.getConfig().getString("messages.action","&aAction completed: &f%action%").replace("%action%",a)));}
+    private void msg(Player p,String k){p.sendMessage(color(plugin.plugin.getConfig().getString("messages."+k,k)));}
     private String color(String s){return ChatColor.translateAlternateColorCodes('&',s==null?"":s);}
 
     static final class Holder implements InventoryHolder {final String type;Holder(String type){this.type=type;}public Inventory getInventory(){return null;}}
