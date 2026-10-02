@@ -3,6 +3,8 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,3 +18,15 @@ jobs:
         with:
           gradle-version: '9.1.0'
       - run: gradle build --no-daemon
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VoidFlame-Admin
+          path: build/libs/VoidFlame-Admin-*.jar
+          if-no-files-found: error
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="build-${{ github.run_number }}"
+          gh release create "$TAG" build/libs/VoidFlame-Admin-*.jar --repo "${{ github.repository }}" --title "VoidFlame-Admin $TAG" --notes "Automatic build from main." --prerelease
