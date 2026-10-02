@@ -1,14 +1,57 @@
+# ================================================================
+# VoidFlame Admin • Production Configuration
+# Paper 26.2 • Java 25
+# ================================================================
+# This plugin is the central in-game administration console.
+# It does NOT duplicate the external Duels/Kits/Arenas/TAB engines.
+# Instead, its GUI routes administrators to those installed systems.
+#
+# IMPORTANT:
+# - Never use /reload. The Admin reload action only reloads this plugin.
+# - Keep external plugin command names aligned with the versions installed.
+# - All persistent VoidFlame data belongs to VoidFlame-Core/database.db.
+
 gui:
-  title: "&8VoidFlame &5Staff Control"
+  title: "&8VoidFlame &5Administration"
   rows: 6
   filler: "BLACK_STAINED_GLASS_PANE"
+  accent: "PURPLE_STAINED_GLASS_PANE"
   confirm-title: "&8Confirm Action"
+  page-size: 45
 
 settings:
   speed-step: 0.1
   max-speed: 1.0
   clear-chat-lines: 100
   kick-all-except-staff: true
+  require-confirmation-for-destructive-actions: true
+  audit-actions: true
+
+# External engine command routing.
+# Change only if your installed third-party plugin uses different commands.
+integrations:
+  duels:
+    command: "duels"
+  kits:
+    command: "kit admin"
+  arenas:
+    command: "arena"
+  queues:
+    command: "duels"
+  ffa:
+    command: "ffa"
+  ranks:
+    command: "ranks"
+  security:
+    command: "antibot status"
+  settings:
+    command: "settings"
+  worlds:
+    command: "vfworld list"
+  database:
+    command: "vfrestore"
+  staff:
+    command: "staffgui"
 
 time-weather:
   lock-time: false
@@ -27,3 +70,4 @@ messages:
   world-has-players: "&cMove players out of this world first."
   cannot-remove-current-world: "&cYou cannot remove the world you are currently in."
   action: "&aAction completed: &f%action%"
+  reload: "&aVoidFlame Admin configuration reloaded."
