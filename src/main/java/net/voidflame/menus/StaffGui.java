@@ -38,7 +38,7 @@ public final class StaffGui implements Listener {
         loadState();
         Bukkit.getPluginManager().registerEvents(this, plugin);
         plugin.getServer().getScheduler().runTaskTimer(plugin, this::enforceLocks, 1L, 20L);
-        plugin.plugin.plugin.getLogger().info("VoidFlame Staff GUI enabled.");
+        plugin.plugin.getLogger().info("VoidFlame Staff GUI enabled.");
     }
 
     public void onDisable() {
@@ -47,7 +47,7 @@ public final class StaffGui implements Listener {
     }
 
     private void loadState() {
-        flags.put("pvp", plugin.plugin.getConfig().getBoolean("flags.pvp", true));
+        flags.put("pvp", plugin.getConfig().getBoolean("flags.pvp", true));
         flags.put("block-place", plugin.getConfig().getBoolean("flags.block-place", true));
         flags.put("mob-spawning", plugin.getConfig().getBoolean("flags.mob-spawning", true));
         lockTime=plugin.getConfig().getBoolean("time-weather.lock-time",false);
@@ -249,11 +249,11 @@ public final class StaffGui implements Listener {
     @EventHandler public void mobs(CreatureSpawnEvent e){if(!flags.getOrDefault("mob-spawning",true)&&e.getSpawnReason()==CreatureSpawnEvent.SpawnReason.NATURAL)e.setCancelled(true);}
 
     private void confirm(Player p,Action a){if((a==Action.CLEAR_INV||a==Action.KICK_ALL||a==Action.STOP)&&!p.hasPermission("voidflame.staff.admin")){msg(p,"no-permission");return;}pending.put(p.getUniqueId(),a);confirmations.put(p.getUniqueId(),System.currentTimeMillis()+15000);Inventory i=gui("confirm",3,"&8Confirm Action");put(i,11,Material.LIME_CONCRETE,"&aConfirm");put(i,15,Material.RED_CONCRETE,"&cCancel");p.openInventory(i);}
-    private void confirm(Player p,int s){if(s==15){pending.remove(p.getUniqueId());confirmations.remove(p.getUniqueId());openMain(p);return;}if(s!=11)return;Long until=confirmations.get(p.getUniqueId());Action a=pending.get(p.getUniqueId());if(until==null||until<System.currentTimeMillis()||a==null){openMain(p);return;}pending.remove(p.getUniqueId());confirmations.remove(p.getUniqueId());Player t=target(p);switch(a){case CLEAR_INV -> {if(t!=null)t.getInventory().clear();done(p,"Clear Inventory");}case KICK_ALL -> {for(Player x:Bukkit.getOnlinePlayers())if(!x.equals(p)&&(!plugin.plugin.getConfig().getBoolean("settings.kick-all-except-staff",true)||!x.hasPermission("voidflame.staff")))x.kickPlayer(color("&cRemoved by staff."));done(p,"Kick All Players");}case STOP -> {done(p,"Stop Server");Bukkit.shutdown();}case REMOVE_WORLD -> { } }if(Bukkit.isPrimaryThread()&&!a.equals(Action.STOP))openMain(p);}
+    private void confirm(Player p,int s){if(s==15){pending.remove(p.getUniqueId());confirmations.remove(p.getUniqueId());openMain(p);return;}if(s!=11)return;Long until=confirmations.get(p.getUniqueId());Action a=pending.get(p.getUniqueId());if(until==null||until<System.currentTimeMillis()||a==null){openMain(p);return;}pending.remove(p.getUniqueId());confirmations.remove(p.getUniqueId());Player t=target(p);switch(a){case CLEAR_INV -> {if(t!=null)t.getInventory().clear();done(p,"Clear Inventory");}case KICK_ALL -> {for(Player x:Bukkit.getOnlinePlayers())if(!x.equals(p)&&(!plugin.getConfig().getBoolean("settings.kick-all-except-staff",true)||!x.hasPermission("voidflame.staff")))x.kickPlayer(color("&cRemoved by staff."));done(p,"Kick All Players");}case STOP -> {done(p,"Stop Server");Bukkit.shutdown();}case REMOVE_WORLD -> { } }if(Bukkit.isPrimaryThread()&&!a.equals(Action.STOP))openMain(p);}
 
-    private void clearChat(Player p){if(!p.hasPermission("voidflame.staff.admin")){msg(p,"no-permission");return;}int lines=plugin.plugin.getConfig().getInt("settings.clear-chat-lines",100);for(Player x:Bukkit.getOnlinePlayers())for(int n=0;n<lines;n++)x.sendMessage(" ");done(p,"Clear Chat");openMain(p);}
-    private void done(Player p,String a){plugin.plugin.getLogger().info("Staff action: "+p.getName()+" -> "+a+(target(p)==null?"":" -> "+target(p).getName()));p.sendMessage(color(plugin.plugin.getConfig().getString("messages.action","&aAction completed: &f%action%").replace("%action%",a)));}
-    private void msg(Player p,String k){p.sendMessage(color(plugin.plugin.getConfig().getString("messages."+k,k)));}
+    private void clearChat(Player p){if(!p.hasPermission("voidflame.staff.admin")){msg(p,"no-permission");return;}int lines=plugin.getConfig().getInt("settings.clear-chat-lines",100);for(Player x:Bukkit.getOnlinePlayers())for(int n=0;n<lines;n++)x.sendMessage(" ");done(p,"Clear Chat");openMain(p);}
+    private void done(Player p,String a){plugin.getLogger().info("Staff action: "+p.getName()+" -> "+a+(target(p)==null?"":" -> "+target(p).getName()));p.sendMessage(color(plugin.getConfig().getString("messages.action","&aAction completed: &f%action%").replace("%action%",a)));}
+    private void msg(Player p,String k){p.sendMessage(color(plugin.getConfig().getString("messages."+k,k)));}
     private String color(String s){return ChatColor.translateAlternateColorCodes('&',s==null?"":s);}
 
     static final class Holder implements InventoryHolder {final String type;Holder(String type){this.type=type;}public Inventory getInventory(){return null;}}
