@@ -31,6 +31,7 @@ public final class AdminMenu implements Listener {
         button(inv, 28, Material.ENDER_CHEST, "§9§lDATA", "§7Core database, backups and recovery", "§eClick §8» §fOpen Data Controls");
         button(inv, 30, Material.NETHER_STAR, "§5§lSTAFF", "§7Staff tools and player moderation", "§eClick §8» §fOpen Staff Controls");
         button(inv, 32, Material.REPEATER, "§7§lRELOAD", "§7Reload only VoidFlame Admin configuration", "§eClick §8» §fReload");
+        button(inv, 34, Material.COMPARATOR, "§b§lSERVER STATUS", "§7TPS, memory, CPU, players, worlds and threads", "§eClick §8» §fView metrics");
         button(inv, 49, Material.BARRIER, "§c§lCLOSE", "§7Close administration");
         p.openInventory(inv);
     }
@@ -90,6 +91,7 @@ public final class AdminMenu implements Listener {
         String command = plugin.getConfig().getString(path + ".command", "");
         if (command == null || command.isBlank()) { p.sendMessage(color("&cThis integration is not configured.")); return; }
         p.closeInventory();
+        plugin.audit(p.getName(), "OPEN_INTEGRATION:" + path);
         Bukkit.getScheduler().runTask(plugin, () -> p.performCommand(command));
     }
 
@@ -103,7 +105,8 @@ public final class AdminMenu implements Listener {
                 else if (slot == 16) openSecurity(p);
                 else if (slot == 28) openData(p);
                 else if (slot == 30) new StaffGui(plugin).openMain(p);
-                else if (slot == 32) { plugin.reloadConfig(); p.sendMessage(color(plugin.getConfig().getString("messages.reload","&aReloaded."))); open(p); }
+                else if (slot == 32) { plugin.reloadConfig(); plugin.audit(p.getName(), "RELOAD_ADMIN_CONFIG"); p.sendMessage(color(plugin.getConfig().getString("messages.reload","&aReloaded."))); open(p); }
+                else if (slot == 34) new MetricsCommand(plugin).onCommand(p, null, "vfstatus", new String[0]);
             }
             case "practice" -> {
                 if(slot==10) route(p,"voidflame.admin.duels","integrations.duels");
