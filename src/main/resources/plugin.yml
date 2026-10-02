@@ -24,8 +24,50 @@ commands:
 
 permissions:
   voidflame.admin:
-    description: Unified VoidFlame administration access.
-    default: op
+    description: Open the central VoidFlame administration console.
+    default: false
+  voidflame.admin.full:
+    description: Full unrestricted access to the central administration console.
+    default: false
+  voidflame.admin.duels:
+    description: Manage the installed duels/practice system.
+    default: false
+  voidflame.admin.kits:
+    description: Manage the installed kit system.
+    default: false
+  voidflame.admin.arenas:
+    description: Manage the installed arena system.
+    default: false
+  voidflame.admin.queues:
+    description: Manage queues and matchmaking.
+    default: false
+  voidflame.admin.ffa:
+    description: Manage FFA.
+    default: false
+  voidflame.admin.rewards:
+    description: Manage rewards and coins.
+    default: false
+  voidflame.admin.ranks:
+    description: Manage ranks and rank assignments.
+    default: false
+  voidflame.admin.players:
+    description: Manage players through the administration console.
+    default: false
+  voidflame.admin.menus:
+    description: Manage menu integrations.
+    default: false
+  voidflame.admin.logs:
+    description: View/manage administration and system logs.
+    default: false
+  voidflame.admin.settings:
+    description: Manage practice/server settings.
+    default: false
+  voidflame.admin.security:
+    description: Manage security controls.
+    default: false
+  voidflame.admin.database:
+    description: Manage Core database backup/recovery.
+    default: false
   voidflame.staff:
     description: Staff control access.
     default: op
