@@ -129,33 +129,26 @@ final class PunishmentService implements Listener {
 
     private CompletableFuture<Boolean> hierarchyAllowed(Player actor, UUID target) {
         if (actor.hasPermission("voidflame.admin.full")) return CompletableFuture.completedFuture(true);
-        CompletableFuture<List<Map<String,Object>>> actorRank = query(
-                "SELECT data_value FROM module_data WHERE module='ranks' AND data_key=?",
-                "player." + actor.getUniqueId());
-        CompletableFuture<List<Map<String,Object>>> targetRank = query(
-                "SELECT data_value FROM module_data WHERE module='ranks' AND data_key=?",
-                "player." + target);
-        return actorRank.thenCombine(targetRank, (aRows, tRows) -> {
-            String a = aRows.isEmpty() ? "member" : String.valueOf(aRows.get(0).get("data_value")).toLowerCase(Locale.ROOT);
-            String t = tRows.isEmpty() ? "member" : String.valueOf(tRows.get(0).get("data_value")).toLowerCase(Locale.ROOT);
-            return new String[]{a, t};
-        }).thenCompose(ranks -> query(
-                "SELECT data_key,data_value FROM module_data WHERE module='ranks' AND (data_key=? OR data_key=?)",
-                "rank." + ranks[0], "rank." + ranks[1])
-        ).thenApply(rows -> {
+        return query("SELECT data_key,data_value FROM module_data WHERE module='ranks' AND " +
+                "(data_key=? OR data_key=? OR data_key LIKE 'rank.%')",
+                "player." + actor.getUniqueId(), "player." + target).thenApply(rows -> {
+            String actorRank = "member";
+            String targetRank = "member";
             Map<String,Integer> weights = new HashMap<>();
             for (Map<String,Object> row : rows) {
                 String key = String.valueOf(row.get("data_key"));
                 String value = String.valueOf(row.get("data_value"));
-                String[] parts = value.split("\\|", -1);
-                if (parts.length >= 4) {
-                    try { weights.put(key.substring("rank.".length()), Integer.parseInt(parts[3])); }
-                    catch (NumberFormatException ignored) {}
+                if (key.equals("player." + actor.getUniqueId())) actorRank = value.toLowerCase(Locale.ROOT);
+                else if (key.equals("player." + target)) targetRank = value.toLowerCase(Locale.ROOT);
+                else if (key.startsWith("rank.")) {
+                    String[] parts = value.split("\\|", -1);
+                    if (parts.length >= 4) {
+                        try { weights.put(key.substring("rank.".length()), Integer.parseInt(parts[3])); }
+                        catch (NumberFormatException ignored) {}
+                    }
                 }
             }
-            int actorWeight = weights.getOrDefault(ranks[0], 100);
-            int targetWeight = weights.getOrDefault(ranks[1], 100);
-            return actorWeight > targetWeight;
+            return weights.getOrDefault(actorRank, 100) > weights.getOrDefault(targetRank, 100);
         });
     }
 
