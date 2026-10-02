@@ -16,5 +16,8 @@ tasks.withType<JavaCompile>().configureEach {
     options.release.set(25)
     options.encoding = "UTF-8"
 }
-tasks.shadowJar { archiveClassifier.set("") }
+tasks.shadowJar {
+    archiveBaseName.set("VoidFlame-Admin")
+    archiveClassifier.set("")
+}
 tasks.build { dependsOn(tasks.shadowJar) }
