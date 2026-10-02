@@ -1,1 +1,1 @@
-rootProject.name = "VoidFlame-Menus"
+rootProject.name = "VoidFlame-Admin"
