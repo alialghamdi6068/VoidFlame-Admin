@@ -2,19 +2,6 @@
 # VoidFlame Admin • Central Administration Console
 # Paper 26.2 • Java 25
 # ================================================================
-# This is the central GUI controller for VoidFlameMC.
-# It coordinates VoidFlame-Core/Ranks/Logs/Security and installed
-# third-party Practice/Duels/Kits/Arenas/TAB systems.
-#
-# Persistent VoidFlame data belongs to:
-#   plugins/VoidFlame-Core/database.db
-#
-# IMPORTANT:
-# - The Admin plugin does not create duplicate databases.
-# - The Admin reload action reloads only this plugin; never use Bukkit /reload.
-# - External commands below are intentionally configurable because command
-#   names vary by the installed third-party plugin/version.
-# - Every destructive action must remain confirmation-protected.
 
 gui:
   title: "&8VoidFlame &5• &dAdministration"
@@ -28,17 +15,17 @@ security:
   confirmation-seconds: 15
   audit-actions: true
 
+logging:
+  file:
+    enabled: true
+    path: "logs/admin.log"
+
 settings:
   speed-step: 0.1
   max-speed: 1.0
   clear-chat-lines: 100
   kick-all-except-staff: true
 
-# ================================================================
-# External system routing
-# Change these commands to match the installed third-party plugins.
-# Leave a command blank to disable that button.
-# ================================================================
 integrations:
   duels:
     command: "duels"
@@ -69,9 +56,14 @@ integrations:
   staff:
     command: "staffgui"
 
-# ================================================================
-# Server controls exposed by Staff GUI
-# ================================================================
+punishments:
+  enabled: true
+  require-confirmation: true
+  history-page-size: 9
+  default-reason: "No reason provided"
+  hierarchy-enforced: true
+  expiry-cleanup-seconds: 30
+
 time-weather:
   lock-time: false
   lock-weather: false
