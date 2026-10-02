@@ -39,6 +39,7 @@ public final class AdminMenu implements Listener {
         button(inv, 23, Material.REDSTONE, "§a§lWORLDS", "§7World enable/load/spawn controls", "§eClick §8» §fWorld Manager");
         button(inv, 24, Material.ENDER_CHEST, "§9§lDATABASE", "§7Core backup and recovery tools", "§eClick §8» §fDatabase status");
         button(inv, 25, Material.REPEATER, "§7§lRELOAD", "§7Reload supported modules", "§eClick §8» §fReload");
+        button(inv, 28, Material.NETHER_STAR, "§5§lSTAFF", "§7Staff controls and moderation tools", "§eClick §8» §fOpen Staff Control");
         button(inv, 49, Material.BARRIER, "§c§lCLOSE", "§7Close administration");
         player.openInventory(inv);
     }
@@ -62,6 +63,11 @@ public final class AdminMenu implements Listener {
             default -> null;
         };
         if (command == null) return;
+        if (slot == 28) {
+            p.closeInventory();
+            Bukkit.getScheduler().runTask(plugin, () -> new StaffGui(plugin).openMain(p));
+            return;
+        }
         p.closeInventory();
         Bukkit.getScheduler().runTask(plugin, () -> p.performCommand(command));
     }
