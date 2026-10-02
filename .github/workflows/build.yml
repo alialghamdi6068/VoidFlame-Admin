@@ -1,4 +1,4 @@
-name: Build VoidFlame-Menus
+name: Build VoidFlame-Admin
 on:
   push:
     branches: [main]
