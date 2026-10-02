@@ -24,6 +24,11 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
             player.sendMessage(ChatColor.GREEN + "VoidFlame Admin configuration reloaded.");
             return true;
         }
+        if (args.length > 0 && args[0].equalsIgnoreCase("punish")) {
+            String[] punishmentArgs = java.util.Arrays.copyOfRange(args, 1, args.length);
+            plugin.punishments().execute(player, punishmentArgs);
+            return true;
+        }
         if (args.length > 0 && (args[0].equalsIgnoreCase("status")
                 || args[0].equalsIgnoreCase("metrics")
                 || args[0].equalsIgnoreCase("tps"))) {
@@ -38,6 +43,6 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length != 1) return List.of();
-        return List.of("status", "metrics", "tps", "reload");
+        return List.of("status", "metrics", "tps", "punish", "reload");
     }
 }
