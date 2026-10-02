@@ -1,0 +1,19 @@
+name: VoidFlame-Menus
+version: 1.0.0
+main: net.voidflame.menus.VoidFlameMenusPlugin
+description: Unified VoidFlame administration and menu framework.
+author: VoidFlame
+website: https://github.com/alialghamdi6068/VoidFlame-Menus
+api-version: '26.2'
+load: POSTWORLD
+softdepend: [VoidFlame-Core, VoidFlame-Kits, VoidFlame-Arenas, VoidFlame-Ranks, VoidFlame-Duels, VoidFlame-Security]
+
+commands:
+  vfadmin:
+    description: Open the unified VoidFlame administration panel.
+    usage: /vfadmin
+    permission: voidflame.admin
+permissions:
+  voidflame.admin:
+    description: Unified VoidFlame administration access.
+    default: op
