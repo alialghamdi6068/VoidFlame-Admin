@@ -31,6 +31,7 @@ final class PunishmentService implements Listener {
     boolean execute(Player actor, String[] args) {
         if (args.length > 0 && args[0].equalsIgnoreCase("confirm")) {
             PendingPunishment request = pending.remove(actor.getUniqueId());
+            if (request != null && System.currentTimeMillis() - request.createdAt() > 15_000L) request = null;
             if (request == null) {
                 actor.sendMessage(color("&cThere is no pending punishment to confirm."));
                 return true;
@@ -181,7 +182,7 @@ final class PunishmentService implements Listener {
         }
         OfflinePlayer target = Bukkit.getOfflinePlayer(args[1]);
         hierarchyAllowed(actor, target.getUniqueId()).thenAccept(allowed -> {
-            if (!allowed) { actor.sendMessage(color("&cYou cannot modify an equal or higher staff player.")); return; }
+            if (!allowed) { Bukkit.getScheduler().runTask(plugin, () -> actor.sendMessage(color("&cYou cannot modify an equal or higher staff player."))); return; }
             update("UPDATE punishments SET active=0 WHERE uuid=? AND active=1", target.getUniqueId().toString())
                     .thenRun(() -> { loadActivePunishments(); Bukkit.getScheduler().runTask(plugin, () -> {
                         actor.sendMessage(color("&aActive punishments cleared for &f" + args[1]));
