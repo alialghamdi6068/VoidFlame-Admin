@@ -11,7 +11,7 @@ softdepend: [VoidFlame-Core, VoidFlame-Kits, VoidFlame-Arenas, VoidFlame-Ranks, 
 commands:
   vfadmin:
     description: Open the unified VoidFlame administration panel.
-    usage: /vfadmin [status|metrics|tps|reload]
+    usage: /vfadmin [status|metrics|tps|punish|reload]
   vfstatus:
     description: Show protected VoidFlame server performance metrics.
     usage: /vfstatus
