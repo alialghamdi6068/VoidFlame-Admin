@@ -1,16 +1,18 @@
 package net.voidflame.menus;
 
 import org.bukkit.ChatColor;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
+import org.bukkit.command.*;
 import org.bukkit.entity.Player;
 
-public final class AdminCommand implements CommandExecutor {
+import java.util.List;
+
+public final class AdminCommand implements CommandExecutor, TabCompleter {
     private final VoidFlameMenusPlugin plugin;
+
     public AdminCommand(VoidFlameMenusPlugin plugin) { this.plugin = plugin; }
 
-    @Override public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) return true;
         if (!player.hasPermission("voidflame.admin") && !player.hasPermission("voidflame.admin.full")) {
             player.sendMessage(ChatColor.RED + "You do not have permission.");
@@ -18,10 +20,24 @@ public final class AdminCommand implements CommandExecutor {
         }
         if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
             plugin.reloadConfig();
+            plugin.audit(player.getName(), "RELOAD_ADMIN_CONFIG");
             player.sendMessage(ChatColor.GREEN + "VoidFlame Admin configuration reloaded.");
             return true;
         }
+        if (args.length > 0 && (args[0].equalsIgnoreCase("status")
+                || args[0].equalsIgnoreCase("metrics")
+                || args[0].equalsIgnoreCase("tps"))) {
+            new MetricsCommand(plugin).onCommand(player, command, label, new String[0]);
+            return true;
+        }
+        plugin.audit(player.getName(), "OPEN_ADMIN_CONSOLE");
         new AdminMenu(plugin).open(player);
         return true;
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (args.length != 1) return List.of();
+        return List.of("status", "metrics", "tps", "reload");
     }
 }
