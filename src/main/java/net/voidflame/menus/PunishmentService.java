@@ -129,9 +129,15 @@ final class PunishmentService implements Listener {
 
     private CompletableFuture<Boolean> hierarchyAllowed(Player actor, UUID target) {
         if (actor.hasPermission("voidflame.admin.full")) return CompletableFuture.completedFuture(true);
-        return query("SELECT COALESCE((SELECT weight FROM ranks r JOIN player_ranks pr ON pr.rank_id=r.rank_id WHERE pr.uuid=?), 0) AS actor_weight, " +
-                "COALESCE((SELECT weight FROM ranks r JOIN player_ranks pr ON pr.rank_id=r.rank_id WHERE pr.uuid=?), 0) AS target_weight",
-                actor.getUniqueId().toString(), target.toString()).thenApply(rows -> {
+        return query("SELECT COALESCE((SELECT CAST(substr(data_value, 1, 64) AS TEXT) FROM module_data WHERE module='ranks' AND data_key=?), 'member') AS actor_rank, " +
+                "COALESCE((SELECT CAST(substr(data_value, 1, 64) AS TEXT) FROM module_data WHERE module='ranks' AND data_key=?), 'member') AS target_rank",
+                "player." + actor.getUniqueId(), "player." + target).thenCompose(rows -> {
+            if (rows.isEmpty()) return CompletableFuture.completedFuture(false);
+            String actorRank = String.valueOf(rows.get(0).get("actor_rank"));
+            String targetRank = String.valueOf(rows.get(0).get("target_rank"));
+            return query("SELECT COALESCE((SELECT weight FROM ranks WHERE rank_id=?), 100) AS actor_weight, " +
+                    "COALESCE((SELECT weight FROM ranks WHERE rank_id=?), 100) AS target_weight", actorRank, targetRank);
+        }).thenApply(rows -> {
             if (rows.isEmpty()) return true;
             Number a = (Number) rows.get(0).get("actor_weight");
             Number t = (Number) rows.get(0).get("target_weight");
