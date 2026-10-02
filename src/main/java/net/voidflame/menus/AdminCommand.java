@@ -18,6 +18,10 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
             player.sendMessage(ChatColor.RED + "You do not have permission.");
             return true;
         }
+
+        if (args.length > 0 && args[0].equalsIgnoreCase("performance")) {
+            return new MetricsCommand(plugin).onCommand(player, command, label, new String[0]);
+        }
         if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
             plugin.reloadConfig();
             plugin.audit(player.getName(), "RELOAD_ADMIN_CONFIG");
@@ -29,12 +33,7 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
             plugin.punishments().execute(player, punishmentArgs);
             return true;
         }
-        if (args.length > 0 && (args[0].equalsIgnoreCase("status")
-                || args[0].equalsIgnoreCase("metrics")
-                || args[0].equalsIgnoreCase("tps"))) {
-            new MetricsCommand(plugin).onCommand(player, command, label, new String[0]);
-            return true;
-        }
+
         plugin.audit(player.getName(), "OPEN_ADMIN_CONSOLE");
         new AdminMenu(plugin).open(player);
         return true;
@@ -43,6 +42,6 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length != 1) return List.of();
-        return List.of("status", "metrics", "tps", "punish", "reload");
+        return List.of("performance", "punish", "reload");
     }
 }
