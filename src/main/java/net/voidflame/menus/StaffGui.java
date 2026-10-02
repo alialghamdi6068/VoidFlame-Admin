@@ -135,30 +135,37 @@ public final class StaffGui implements Listener {
     @EventHandler public void quit(PlayerQuitEvent e){targets.entrySet().removeIf(x->x.getValue().equals(e.getPlayer().getUniqueId()));}
 
     private void main(Player p,int s){
+        if(!(p.hasPermission("voidflame.staff") || p.hasPermission("voidflame.admin") || p.hasPermission("voidflame.admin.full"))){msg(p,"no-permission");return;}
+        if(s==28){if(require(p,"voidflame.staff.players"))openPlayers(p);return;}
+        if(s==24){if(require(p,"voidflame.staff.basic"))p.openInventory(p.getInventory());return;}
+        if(s==25){if(require(p,"voidflame.staff.basic"))p.openWorkbench(null,true);return;}
         Player t=target(p);
-        if(s==28){openPlayers(p);return;}
-        if(s==24){p.openInventory(p.getInventory());return;}
-        if(s==25){p.openWorkbench(null,true);return;}
-        if(t==null){msg(p,"target-required");return;}
+        if(t==null && s!=31 && s!=32 && s!=30 && s!=34 && s!=33){msg(p,"target-required");return;}
         switch(s){
-            case 10 -> {heal(t);done(p,"Heal Me");}
-            case 11 -> openGamemode(p);
-            case 12 -> {t.setInvulnerable(!t.isInvulnerable());done(p,"Protection Mode");}
-            case 13 -> {t.setAllowFlight(!t.getAllowFlight());t.setFlying(t.getAllowFlight());done(p,"Fly");}
-            case 14,15 -> openSpeed(p);
-            case 16 -> openPotions(p);
-            case 19 -> {for(ItemStack x:t.getInventory().getContents())repair(x);for(ItemStack x:t.getInventory().getArmorContents())repair(x);repair(t.getInventory().getItemInOffHand());done(p,"Item Repair");}
-            case 20 -> openArmor(p);
-            case 21 -> confirm(p,Action.CLEAR_INV);
-            case 22 -> {t.setArrowsInBody(0);done(p,"Clear Arrows from Body");}
-            case 23 -> openXp(p);
-            case 29 -> confirm(p,Action.KICK_ALL);
-            case 30 -> openTime(p);
-            case 31 -> openServer(p);
-            case 32 -> openWorlds(p);
-            case 33 -> clearChat(p);
-            case 34 -> openFlags(p);
+            case 10 -> {if(require(p,"voidflame.staff.basic")){heal(t);done(p,"Heal");}}
+            case 11 -> {if(require(p,"voidflame.staff.basic"))openGamemode(p);}
+            case 12 -> {if(require(p,"voidflame.staff.manage")){t.setInvulnerable(!t.isInvulnerable());done(p,"Protection Mode");}}
+            case 13 -> {if(require(p,"voidflame.staff.manage")){t.setAllowFlight(!t.getAllowFlight());t.setFlying(t.getAllowFlight());done(p,"Fly");}}
+            case 14,15 -> {if(require(p,"voidflame.staff.basic"))openSpeed(p);}
+            case 16 -> {if(require(p,"voidflame.staff.basic"))openPotions(p);}
+            case 19 -> {if(require(p,"voidflame.staff.basic")){for(ItemStack x:t.getInventory().getContents())repair(x);for(ItemStack x:t.getInventory().getArmorContents())repair(x);repair(t.getInventory().getItemInOffHand());done(p,"Item Repair");}}
+            case 20 -> {if(require(p,"voidflame.staff.manage"))openArmor(p);}
+            case 21 -> {if(require(p,"voidflame.staff.moderate"))confirm(p,Action.CLEAR_INV);}
+            case 22 -> {if(require(p,"voidflame.staff.basic")){t.setArrowsInBody(0);done(p,"Clear Arrows from Body");}}
+            case 23 -> {if(require(p,"voidflame.staff.basic"))openXp(p);}
+            case 29 -> {if(require(p,"voidflame.staff.admin"))confirm(p,Action.KICK_ALL);}
+            case 30 -> {if(require(p,"voidflame.staff.server"))openTime(p);}
+            case 31 -> {if(require(p,"voidflame.staff.server"))openServer(p);}
+            case 32 -> {if(require(p,"voidflame.staff.world"))openWorlds(p);}
+            case 33 -> {if(require(p,"voidflame.staff.moderate"))clearChat(p);}
+            case 34 -> {if(require(p,"voidflame.staff.admin"))openFlags(p);}
         }
+    }
+
+    private boolean require(Player p,String permission){
+        if(p.hasPermission(permission) || p.hasPermission("voidflame.admin.full")) return true;
+        msg(p,"no-permission");
+        return false;
     }
 
     private void heal(Player t){t.setHealth(t.getMaxHealth());t.setFireTicks(0);t.setFoodLevel(20);t.setSaturation(20);t.setExhaustion(0);}
