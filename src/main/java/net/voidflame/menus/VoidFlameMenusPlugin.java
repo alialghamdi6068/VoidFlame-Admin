@@ -27,6 +27,7 @@ public final class VoidFlameMenusPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         if (staffGui != null) staffGui.onDisable();
+        if (audit != null) audit.shutdown();
     }
 
     PunishmentService punishments() { return punishments; }
