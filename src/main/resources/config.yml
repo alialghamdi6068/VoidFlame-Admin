@@ -1,34 +1,44 @@
 # ================================================================
-# VoidFlame Admin • Production Configuration
+# VoidFlame Admin • Central Administration Console
 # Paper 26.2 • Java 25
 # ================================================================
-# This plugin is the central in-game administration console.
-# It does NOT duplicate the external Duels/Kits/Arenas/TAB engines.
-# Instead, its GUI routes administrators to those installed systems.
+# This is the central GUI controller for VoidFlameMC.
+# It coordinates VoidFlame-Core/Ranks/Logs/Security and installed
+# third-party Practice/Duels/Kits/Arenas/TAB systems.
+#
+# Persistent VoidFlame data belongs to:
+#   plugins/VoidFlame-Core/database.db
 #
 # IMPORTANT:
-# - Never use /reload. The Admin reload action only reloads this plugin.
-# - Keep external plugin command names aligned with the versions installed.
-# - All persistent VoidFlame data belongs to VoidFlame-Core/database.db.
+# - The Admin plugin does not create duplicate databases.
+# - The Admin reload action reloads only this plugin; never use Bukkit /reload.
+# - External commands below are intentionally configurable because command
+#   names vary by the installed third-party plugin/version.
+# - Every destructive action must remain confirmation-protected.
 
 gui:
-  title: "&8VoidFlame &5Administration"
+  title: "&8VoidFlame &5• &dAdministration"
   rows: 6
   filler: "BLACK_STAINED_GLASS_PANE"
   accent: "PURPLE_STAINED_GLASS_PANE"
-  confirm-title: "&8Confirm Action"
   page-size: 45
+
+security:
+  destructive-confirmation: true
+  confirmation-seconds: 15
+  audit-actions: true
 
 settings:
   speed-step: 0.1
   max-speed: 1.0
   clear-chat-lines: 100
   kick-all-except-staff: true
-  require-confirmation-for-destructive-actions: true
-  audit-actions: true
 
-# External engine command routing.
-# Change only if your installed third-party plugin uses different commands.
+# ================================================================
+# External system routing
+# Change these commands to match the installed third-party plugins.
+# Leave a command blank to disable that button.
+# ================================================================
 integrations:
   duels:
     command: "duels"
@@ -40,8 +50,14 @@ integrations:
     command: "duels"
   ffa:
     command: "ffa"
+  rewards:
+    command: "coinshop"
   ranks:
     command: "ranks"
+  menus:
+    command: "duels"
+  logs:
+    command: "logs"
   security:
     command: "antibot status"
   settings:
@@ -53,6 +69,9 @@ integrations:
   staff:
     command: "staffgui"
 
+# ================================================================
+# Server controls exposed by Staff GUI
+# ================================================================
 time-weather:
   lock-time: false
   lock-weather: false
@@ -65,9 +84,7 @@ flags:
   mob-spawning: true
 
 messages:
-  no-permission: "&cYou do not have permission."
-  target-required: "&cSelect a target player first."
-  world-has-players: "&cMove players out of this world first."
-  cannot-remove-current-world: "&cYou cannot remove the world you are currently in."
+  no-permission: "&cYou do not have permission for this section."
+  action-disabled: "&cThis administration action is disabled."
   action: "&aAction completed: &f%action%"
   reload: "&aVoidFlame Admin configuration reloaded."
