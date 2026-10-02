@@ -186,7 +186,7 @@ final class PunishmentService implements Listener {
                     .thenRun(() -> { loadActivePunishments(); Bukkit.getScheduler().runTask(plugin, () -> {
                         actor.sendMessage(color("&aActive punishments cleared for &f" + args[1]));
                         plugin.audit(actor.getName(), "UNPUNISH:" + args[1]);
-                    })); });
+                    }); });
         });
         return true;
     }
