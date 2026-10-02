@@ -2,13 +2,17 @@ package net.voidflame.menus;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
+import org.bukkit.World;
+import org.bukkit.command.*;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 
 import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryPoolMXBean;
 import java.lang.management.OperatingSystemMXBean;
+import java.lang.management.GarbageCollectorMXBean;
+import java.lang.management.RuntimeMXBean;
 import java.util.Locale;
 
 public final class MetricsCommand implements CommandExecutor {
@@ -20,47 +24,98 @@ public final class MetricsCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage("VoidFlame TPS: " + tps());
-            sender.sendMessage("Memory: " + memory());
-            sender.sendMessage("Players: " + Bukkit.getOnlinePlayers().size() + "/" + Bukkit.getMaxPlayers());
-            return true;
-        }
-        if (!player.hasPermission("voidflame.admin") && !player.hasPermission("voidflame.admin.full")) {
-            player.sendMessage(ChatColor.RED + "You do not have permission.");
+        if (!sender.hasPermission("voidflame.admin.metrics")
+                && !sender.hasPermission("voidflame.admin.full")
+                && !sender.hasPermission("voidflame.admin")) {
+            sender.sendMessage(ChatColor.RED + "You do not have permission.");
             return true;
         }
 
-        String tps = tps();
+        double[] tps = Bukkit.getTPS();
+        double currentTps = tps.length == 0 ? 20.0D : Math.min(20.0D, tps[0]);
         Runtime runtime = Runtime.getRuntime();
+        long used = runtime.totalMemory() - runtime.freeMemory();
         long max = runtime.maxMemory();
-        long allocated = runtime.totalMemory();
-        long free = runtime.freeMemory();
-        long used = allocated - free;
+        long committed = runtime.totalMemory();
 
-        player.sendMessage(ChatColor.DARK_PURPLE + "━━━━━━━━ VoidFlame Server Status ━━━━━━━━");
-        player.sendMessage(ChatColor.LIGHT_PURPLE + "TPS " + ChatColor.GRAY + "» "
-                + tpsColor(Bukkit.getTPS().length == 0 ? 20.0D : Bukkit.getTPS()[0]) + tps);
-        player.sendMessage(ChatColor.AQUA + "Players " + ChatColor.GRAY + "» "
+        sender.sendMessage(ChatColor.DARK_PURPLE + "━━━━━━━━ VoidFlame Server Status ━━━━━━━━");
+        sender.sendMessage(ChatColor.LIGHT_PURPLE + "TPS " + ChatColor.GRAY + "» "
+                + tpsColor(currentTps) + format(currentTps)
+                + ChatColor.GRAY + " | 1m " + format(tps.length > 1 ? Math.min(20.0D, tps[1]) : currentTps)
+                + " | 5m " + format(tps.length > 2 ? Math.min(20.0D, tps[2]) : currentTps));
+        sender.sendMessage(ChatColor.AQUA + "Players " + ChatColor.GRAY + "» "
                 + ChatColor.WHITE + Bukkit.getOnlinePlayers().size() + "/" + Bukkit.getMaxPlayers());
-        player.sendMessage(ChatColor.GREEN + "Memory " + ChatColor.GRAY + "» "
+        sender.sendMessage(ChatColor.GREEN + "Heap " + ChatColor.GRAY + "» "
                 + ChatColor.WHITE + mb(used) + " MB used"
-                + ChatColor.GRAY + " / " + ChatColor.WHITE + mb(max) + " MB max");
-        player.sendMessage(ChatColor.YELLOW + "Allocated " + ChatColor.GRAY + "» "
-                + ChatColor.WHITE + mb(allocated) + " MB");
-        player.sendMessage(ChatColor.BLUE + "CPU " + ChatColor.GRAY + "» "
-                + ChatColor.WHITE + cpu());
-        player.sendMessage(ChatColor.GRAY + "Worlds " + ChatColor.GRAY + "» "
-                + ChatColor.WHITE + Bukkit.getWorlds().size());
-        player.sendMessage(ChatColor.GRAY + "Threads " + ChatColor.GRAY + "» "
-                + ChatColor.WHITE + Thread.getAllStackTraces().size());
-        player.sendMessage(ChatColor.DARK_PURPLE + "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        plugin.audit(player.getName(), "VIEW_SERVER_METRICS");
+                + ChatColor.GRAY + " / " + ChatColor.WHITE + mb(committed) + " MB committed"
+                + ChatColor.GRAY + " / " + ChatColor.WHITE + mb(max) + " MB max"
+                + ChatColor.GRAY + " (" + percent(used, max) + "%)");
+        sender.sendMessage(ChatColor.BLUE + "CPU " + ChatColor.GRAY + "» "
+                + ChatColor.WHITE + processCpu() + ChatColor.GRAY + " process | "
+                + ChatColor.WHITE + systemCpu() + ChatColor.GRAY + " system");
+        sender.sendMessage(ChatColor.YELLOW + "Runtime " + ChatColor.GRAY + "» "
+                + ChatColor.WHITE + uptime() + ChatColor.GRAY + " | Java "
+                + ChatColor.WHITE + System.getProperty("java.version"));
+        sender.sendMessage(ChatColor.GRAY + "Worlds " + ChatColor.GRAY + "» "
+                + ChatColor.WHITE + Bukkit.getWorlds().size()
+                + ChatColor.GRAY + " | chunks " + ChatColor.WHITE + chunks()
+                + ChatColor.GRAY + " | entities " + ChatColor.WHITE + entities());
+        sender.sendMessage(ChatColor.GRAY + "Threads " + ChatColor.GRAY + "» "
+                + ChatColor.WHITE + Thread.getAllStackTraces().size()
+                + ChatColor.GRAY + " | loaded plugins " + ChatColor.WHITE + Bukkit.getPluginManager().getPlugins().length);
+        sender.sendMessage(ChatColor.GOLD + "GC " + ChatColor.GRAY + "» "
+                + ChatColor.WHITE + gcCollections() + ChatColor.GRAY + " collections");
+        sender.sendMessage(ChatColor.DARK_PURPLE + "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        plugin.audit(sender.getName(), "VIEW_SERVER_METRICS");
         return true;
     }
 
-    private String tps() {
-        double value = Bukkit.getTPS().length == 0 ? 20.0D : Math.min(20.0D, Bukkit.getTPS()[0]);
+    private String processCpu() {
+        if (ManagementFactory.getOperatingSystemMXBean() instanceof com.sun.management.OperatingSystemMXBean os) {
+            double value = os.getProcessCpuLoad();
+            if (value >= 0) return String.format(Locale.ROOT, "%.1f%%", value * 100.0D);
+        }
+        return "N/A";
+    }
+
+    private String systemCpu() {
+        if (ManagementFactory.getOperatingSystemMXBean() instanceof com.sun.management.OperatingSystemMXBean os) {
+            double value = os.getCpuLoad();
+            if (value >= 0) return String.format(Locale.ROOT, "%.1f%%", value * 100.0D);
+        }
+        OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
+        double load = os.getSystemLoadAverage();
+        return load < 0 ? "N/A" : String.format(Locale.ROOT, "%.2f load", load);
+    }
+
+    private String uptime() {
+        long seconds = ManagementFactory.getRuntimeMXBean().getUptime() / 1000L;
+        long days = seconds / 86400L;
+        seconds %= 86400L;
+        long hours = seconds / 3600L;
+        seconds %= 3600L;
+        long minutes = seconds / 60L;
+        seconds %= 60L;
+        return days > 0 ? days + "d " + hours + "h " + minutes + "m"
+                : hours + "h " + minutes + "m " + seconds + "s";
+    }
+
+    private long chunks() {
+        return Bukkit.getWorlds().stream().mapToLong(World::getLoadedChunks).sum();
+    }
+
+    private long entities() {
+        return Bukkit.getWorlds().stream().mapToLong(w -> w.getEntities().size()).sum();
+    }
+
+    private long gcCollections() {
+        return ManagementFactory.getGarbageCollectorMXBeans().stream()
+                .mapToLong(GarbageCollectorMXBean::getCollectionCount)
+                .filter(value -> value >= 0)
+                .sum();
+    }
+
+    private String format(double value) {
         return String.format(Locale.ROOT, "%.2f", value);
     }
 
@@ -71,19 +126,12 @@ public final class MetricsCommand implements CommandExecutor {
         return ChatColor.RED.toString();
     }
 
-    private String memory() {
-        Runtime r = Runtime.getRuntime();
-        return mb(r.totalMemory() - r.freeMemory()) + " MB";
+    private String percent(long used, long max) {
+        if (max <= 0) return "0.0";
+        return String.format(Locale.ROOT, "%.1f", used * 100.0D / max);
     }
 
     private long mb(long bytes) {
         return bytes / 1024L / 1024L;
-    }
-
-    private String cpu() {
-        OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
-        double load = os.getSystemLoadAverage();
-        if (load < 0) return "N/A";
-        return String.format(Locale.ROOT, "%.2f load", load);
     }
 }
