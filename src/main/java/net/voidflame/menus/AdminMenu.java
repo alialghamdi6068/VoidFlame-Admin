@@ -59,7 +59,7 @@ public final class AdminMenu implements Listener {
             case 22 -> "settings";
             case 23 -> "vfworld list";
             case 24 -> "vfrestore";
-            case 25 -> "reload";
+            case 25 -> "vfadmin reload";
             default -> null;
         };
         if (slot == 28) {
