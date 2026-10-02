@@ -13,4 +13,6 @@ jobs:
           distribution: temurin
           java-version: '25'
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew build --no-daemon
+        with:
+          gradle-version: '9.0'
+      - run: gradle build --no-daemon
