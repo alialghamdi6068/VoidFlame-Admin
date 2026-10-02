@@ -12,14 +12,19 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 final class PunishmentService implements Listener {
     private final VoidFlameMenusPlugin plugin;
     private Object storage;
+    private final Set<UUID> banned = ConcurrentHashMap.newKeySet();
+    private final Set<UUID> muted = ConcurrentHashMap.newKeySet();
 
     PunishmentService(VoidFlameMenusPlugin plugin) {
         this.plugin = plugin;
         this.storage = resolveStorage();
+        loadActivePunishments();
+        Bukkit.getScheduler().runTaskTimer(plugin, this::refreshActivePunishments, 20L * 30L, 20L * 30L);
     }
 
     boolean execute(Player actor, String[] args) {
@@ -81,6 +86,8 @@ final class PunishmentService implements Listener {
                 return;
             }
             insert(targetId, targetName, actor, type, reason, expires).thenRun(() -> Bukkit.getScheduler().runTask(plugin, () -> {
+                if (action.equals("ban") || action.equals("tempban")) banned.add(targetId);
+                if (action.equals("mute") || action.equals("tempmute")) muted.add(targetId);
                 applyOnlineAction(action, targetId, reason, expires);
                 actor.sendMessage(color("&aPunishment applied: &f" + type + " &ato &f" + targetName));
                 plugin.audit(actor.getName(), "PUNISH:" + type + ":" + targetName + ":" + reason);
@@ -146,31 +153,45 @@ final class PunishmentService implements Listener {
         hierarchyAllowed(actor, target.getUniqueId()).thenAccept(allowed -> {
             if (!allowed) { actor.sendMessage(color("&cYou cannot modify an equal or higher staff player.")); return; }
             update("UPDATE punishments SET active=0 WHERE uuid=? AND active=1", target.getUniqueId().toString())
-                    .thenRun(() -> Bukkit.getScheduler().runTask(plugin, () -> {
+                    .thenRun(() -> { loadActivePunishments(); Bukkit.getScheduler().runTask(plugin, () -> {
                         actor.sendMessage(color("&aActive punishments cleared for &f" + args[1]));
                         plugin.audit(actor.getName(), "UNPUNISH:" + args[1]);
-                    }));
+                    })); });
         });
         return true;
     }
 
-    private void check(Player player, String type, java.util.function.Consumer<Boolean> result) {
-        query("SELECT 1 FROM punishments WHERE uuid=? AND type IN (?) AND active=1 AND (expires_at IS NULL OR expires_at=0 OR expires_at>?) LIMIT 1",
-                player.getUniqueId().toString(), type, System.currentTimeMillis()).thenAccept(rows -> result.accept(!rows.isEmpty()));
+    private void loadActivePunishments() {
+        query("SELECT uuid,type FROM punishments WHERE active=1 AND (expires_at IS NULL OR expires_at=0 OR expires_at>?)",
+                System.currentTimeMillis()).thenAccept(rows -> {
+            banned.clear();
+            muted.clear();
+            for (Map<String,Object> row : rows) {
+                try {
+                    UUID id = UUID.fromString(String.valueOf(row.get("uuid")));
+                    String type = String.valueOf(row.get("type"));
+                    if (type.equals("BAN") || type.equals("TEMPBAN")) banned.add(id);
+                    if (type.equals("MUTE") || type.equals("TEMPMUTE")) muted.add(id);
+                } catch (IllegalArgumentException ignored) {}
+            }
+        });
+    }
+
+    private void refreshActivePunishments() {
+        query("UPDATE punishments SET active=0 WHERE active=1 AND expires_at IS NOT NULL AND expires_at>0 AND expires_at<=?",
+                System.currentTimeMillis()).thenRun(this::loadActivePunishments);
     }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        check(event.getPlayer(), "BAN", banned -> {
-            if (banned) Bukkit.getScheduler().runTask(plugin, () -> event.getPlayer().kickPlayer(color("&cYou are banned from VoidFlame.")));
-        });
+        if (banned.contains(event.getPlayer().getUniqueId())) {
+            event.getPlayer().kickPlayer(color("&cYou are banned from VoidFlame."));
+        }
     }
 
     @EventHandler
     public void onChat(AsyncPlayerChatEvent event) {
-        Player player = event.getPlayer();
-        check(player, "MUTE", muted -> { if (muted) event.setCancelled(true); });
-        check(player, "TEMPMUTE", muted -> { if (muted) event.setCancelled(true); });
+        if (muted.contains(event.getPlayer().getUniqueId())) event.setCancelled(true);
     }
 
     private void help(Player p) {
