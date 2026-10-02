@@ -14,5 +14,5 @@ jobs:
           java-version: '25'
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '9.0'
+          gradle-version: '8.14'
       - run: gradle build --no-daemon
