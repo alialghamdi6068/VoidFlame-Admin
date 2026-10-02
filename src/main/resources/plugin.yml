@@ -71,6 +71,15 @@ permissions:
   voidflame.staff:
     description: Staff control access.
     default: op
+  voidflame.staff.basic:
+    description: Basic staff player tools.
+    default: false
+  voidflame.staff.manage:
+    description: Advanced player state and inventory controls.
+    default: false
+  voidflame.staff.moderate:
+    description: Moderation actions such as clearing inventory/chat.
+    default: false
   voidflame.staff.players:
     description: Staff player management access.
     default: op
