@@ -101,7 +101,7 @@ public final class MetricsCommand implements CommandExecutor {
     }
 
     private long chunks() {
-        return Bukkit.getWorlds().stream().mapToLong(World::getLoadedChunks).sum();
+        return Bukkit.getWorlds().stream().mapToLong(w -> w.getLoadedChunks().length).sum();
     }
 
     private long entities() {
