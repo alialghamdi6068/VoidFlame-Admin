@@ -20,7 +20,7 @@ import org.bukkit.enchantments.Enchantment;
 
 import java.util.*;
 
-public final class StaffGui implements Listener, CommandExecutor {
+public final class StaffGui implements Listener {
     private final VoidFlameMenusPlugin plugin;
     public StaffGui(VoidFlameMenusPlugin plugin) { this.plugin = plugin; }
     private final Map<UUID, UUID> targets = new HashMap<>();
@@ -36,8 +36,6 @@ public final class StaffGui implements Listener, CommandExecutor {
     public void onEnable() {
         plugin.saveDefaultConfig();
         loadState();
-        plugin.getCommand("staff").setExecutor(this);
-        plugin.getCommand("staffgui").setExecutor(this);
         Bukkit.getPluginManager().registerEvents(this, plugin);
         plugin.getServer().getScheduler().runTaskTimer(plugin, this::enforceLocks, 1L, 20L);
         plugin.plugin.getLogger().info("VoidFlame Staff GUI enabled.");
@@ -65,12 +63,6 @@ public final class StaffGui implements Listener, CommandExecutor {
         getConfig().set("time-weather.time",lockedTime);
         getConfig().set("time-weather.storm",storm);
         plugin.saveConfig();
-    }
-
-    @Override public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player p)) { sender.sendMessage("Players only."); return true; }
-        if (!p.hasPermission("voidflame.staff")) { msg(p,"no-permission"); return true; }
-        openMain(p); return true;
     }
 
     private Inventory gui(String type,int rows,String title) {
