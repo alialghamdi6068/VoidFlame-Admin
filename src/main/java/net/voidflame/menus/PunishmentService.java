@@ -235,10 +235,12 @@ final class PunishmentService implements Listener {
         Object provider = storage == null ? resolveStorage() : storage;
         if (provider == null) return CompletableFuture.failedFuture(new IllegalStateException("VoidFlame-Core unavailable"));
         try {
-            Method m = provider.getClass().getMethod("query", String.class, Object[].class);
+            Method databaseMethod = provider.getClass().getMethod("database");
+            Object database = databaseMethod.invoke(provider);
+            Method execute = database.getClass().getMethod("execute", String.class, Object[].class);
             @SuppressWarnings("unchecked")
-            CompletableFuture<List<Map<String,Object>>> f = (CompletableFuture<List<Map<String,Object>>>) m.invoke(provider, sql, params);
-            return f.thenApply(ignored -> null);
+            CompletableFuture<Void> f = (CompletableFuture<Void>) execute.invoke(database, sql, params);
+            return f;
         } catch (Exception e) {
             return CompletableFuture.failedFuture(e);
         }
