@@ -44,37 +44,22 @@ public final class MetricsCommand implements CommandExecutor {
         double mspt = averageTickTime();
         String health = health(current, mspt, used, max);
 
-        sender.sendMessage(ChatColor.DARK_PURPLE + "━━━━━━━━ VoidFlame Performance ━━━━━━━━");
-        sender.sendMessage(ChatColor.LIGHT_PURPLE + "TPS " + ChatColor.GRAY + "» "
-                + tpsColor(current) + fmt(current)
-                + ChatColor.GRAY + " | 1m " + fmt(one)
-                + " | 5m " + fmt(five)
-                + " | 15m " + fmt(fifteen)
-                + ChatColor.GRAY + " | MSPT " + ChatColor.WHITE + fmt(mspt));
-        sender.sendMessage(ChatColor.GREEN + "RAM " + ChatColor.GRAY + "» "
-                + ChatColor.WHITE + mb(used) + " / " + mb(max) + " MB"
+        sender.sendMessage(ChatColor.DARK_PURPLE + "⚡ VoidFlame Performance");
+        sender.sendMessage("");
+        sender.sendMessage(ChatColor.WHITE + "TPS: " + tpsColor(current) + fmt(current)
+                + ChatColor.GRAY + " | MSPT: " + ChatColor.WHITE + fmt(mspt) + "ms");
+        sender.sendMessage(ChatColor.WHITE + "RAM: " + mb(used) + " / " + mb(max) + " MB"
                 + ChatColor.GRAY + " (" + percent(used, max) + "%)");
-        sender.sendMessage(ChatColor.BLUE + "CPU " + ChatColor.GRAY + "» "
-                + ChatColor.WHITE + cpu(processCpu) + ChatColor.GRAY + " process | "
-                + ChatColor.WHITE + cpu(systemCpu) + ChatColor.GRAY + " system");
-        sender.sendMessage(ChatColor.AQUA + "Players " + ChatColor.GRAY + "» "
-                + ChatColor.WHITE + Bukkit.getOnlinePlayers().size() + "/" + Bukkit.getMaxPlayers()
-                + ChatColor.GRAY + " | Worlds " + ChatColor.WHITE + Bukkit.getWorlds().size());
-        sender.sendMessage(ChatColor.GRAY + "Server " + ChatColor.GRAY + "» "
-                + ChatColor.WHITE + "Chunks " + chunks()
-                + ChatColor.GRAY + " | Entities " + ChatColor.WHITE + entities()
-                + ChatColor.GRAY + " | Plugins " + ChatColor.WHITE + Bukkit.getPluginManager().getPlugins().length);
-        sender.sendMessage(ChatColor.GRAY + "JVM " + ChatColor.GRAY + "» "
-                + ChatColor.WHITE + "Java " + System.getProperty("java.version")
-                + ChatColor.GRAY + " | Threads " + ChatColor.WHITE + threadCount()
-                + ChatColor.GRAY + " | GC " + ChatColor.WHITE + gcCollections());
-        sender.sendMessage(ChatColor.YELLOW + "Runtime " + ChatColor.GRAY + "» "
-                + ChatColor.WHITE + uptime()
-                + ChatColor.GRAY + " | Heap committed " + ChatColor.WHITE + mb(committed) + " MB");
-        sender.sendMessage(ChatColor.GRAY + "Disk " + ChatColor.GRAY + "» "
-                + ChatColor.WHITE + diskFree() + " free");
-        sender.sendMessage(ChatColor.WHITE + "Status " + ChatColor.GRAY + "» " + healthColor(health) + health);
-        sender.sendMessage(ChatColor.DARK_PURPLE + "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        sender.sendMessage(ChatColor.WHITE + "CPU: " + cpu(processCpu));
+        sender.sendMessage(ChatColor.WHITE + "Players: " + Bukkit.getOnlinePlayers().size() + "/" + Bukkit.getMaxPlayers());
+        sender.sendMessage(ChatColor.WHITE + "Entities: " + entities());
+        sender.sendMessage(ChatColor.WHITE + "Chunks: " + chunks());
+        sender.sendMessage(ChatColor.WHITE + "Worlds: " + Bukkit.getWorlds().size());
+        sender.sendMessage(ChatColor.WHITE + "Threads: " + threadCount());
+        sender.sendMessage(ChatColor.WHITE + "Java: " + Runtime.version().feature());
+        sender.sendMessage(ChatColor.WHITE + "Uptime: " + uptime());
+        sender.sendMessage("");
+        sender.sendMessage(ChatColor.WHITE + "Status: " + healthColor(health) + health);
         plugin.audit(sender.getName(), "VIEW_SERVER_PERFORMANCE");
         return true;
     }
