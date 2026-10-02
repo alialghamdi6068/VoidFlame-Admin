@@ -16,101 +16,161 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.List;
 
 public final class AdminMenu implements Listener {
-    public static final String TITLE = "§8VoidFlame §7• §5Administration";
+    public static final String TITLE = "§8VoidFlame §5• §dAdministration";
     private final VoidFlameMenusPlugin plugin;
 
     public AdminMenu(VoidFlameMenusPlugin plugin) { this.plugin = plugin; }
 
-    public void open(Player player) {
-        if (!player.hasPermission("voidflame.admin")) return;
-        Inventory inv = Bukkit.createInventory(new Holder(), 54, TITLE);
-        fill(inv);
-        button(inv, 10, Material.CHEST, "§d§lKITS", "§7Kit creation, layouts, defaults", "§eClick §8» §fOpen Kit Administration");
-        button(inv, 11, Material.NETHERITE_SWORD, "§d§lARENAS", "§7Arena lifecycle and kit restrictions", "§eClick §8» §fOpen Arena Administration");
-        button(inv, 12, Material.DIAMOND_SWORD, "§d§lDUELS", "§7Duels, reports and match controls", "§eClick §8» §fOpen Duels");
-        button(inv, 13, Material.NETHER_STAR, "§b§lQUEUES", "§7Queue and matchmaking controls", "§eClick §8» §fOpen Duel Queue");
-        button(inv, 14, Material.ENDER_PEARL, "§a§lFFA", "§7Free For All controls", "§eClick §8» §fOpen FFA");
-        button(inv, 15, Material.NAME_TAG, "§6§lRANKS", "§7Ranks, colors and player assignments", "§eClick §8» §fOpen Rank Administration");
-        button(inv, 16, Material.COMPASS, "§5§lMENUS", "§7Unified menu entry point", "§eClick §8» §fMenu controls");
-        button(inv, 19, Material.GOLD_INGOT, "§e§lREWARDS", "§7Coins and reward configuration", "§eClick §8» §fCoin Shop");
-        button(inv, 20, Material.PLAYER_HEAD, "§f§lPLAYERS", "§7Player and rank management", "§eClick §8» §fRank/player tools");
-        button(inv, 21, Material.SHIELD, "§c§lSECURITY", "§7AntiBot, rate limits and security", "§eClick §8» §fSecurity status");
-        button(inv, 22, Material.COMPARATOR, "§b§lSETTINGS", "§7Practice settings and configuration", "§eClick §8» §fPractice Settings");
-        button(inv, 23, Material.REDSTONE, "§a§lWORLDS", "§7World enable/load/spawn controls", "§eClick §8» §fWorld Manager");
-        button(inv, 24, Material.ENDER_CHEST, "§9§lDATABASE", "§7Core backup and recovery tools", "§eClick §8» §fDatabase status");
-        button(inv, 25, Material.REPEATER, "§7§lRELOAD", "§7Reload supported modules", "§eClick §8» §fReload");
-        button(inv, 28, Material.NETHER_STAR, "§5§lSTAFF", "§7Staff controls and moderation tools", "§eClick §8» §fOpen Staff Control");
+    public void open(Player p) {
+        if (!allowed(p, "voidflame.admin")) { deny(p); return; }
+        Inventory inv = gui("main", TITLE);
+        button(inv, 10, Material.DIAMOND_SWORD, "§d§lPRACTICE", "§7Duels, kits, arenas, queues, FFA", "§eClick §8» §fOpen Practice Controls");
+        button(inv, 12, Material.NAME_TAG, "§6§lMANAGEMENT", "§7Ranks, players, menus, logs, settings", "§eClick §8» §fOpen Management");
+        button(inv, 14, Material.REDSTONE, "§b§lSERVER", "§7Worlds, time, weather, flags and server controls", "§eClick §8» §fOpen Server Controls");
+        button(inv, 16, Material.SHIELD, "§c§lSECURITY", "§7Security status and protection controls", "§eClick §8» §fOpen Security");
+        button(inv, 28, Material.ENDER_CHEST, "§9§lDATA", "§7Core database, backups and recovery", "§eClick §8» §fOpen Data Controls");
+        button(inv, 30, Material.NETHER_STAR, "§5§lSTAFF", "§7Staff tools and player moderation", "§eClick §8» §fOpen Staff Controls");
+        button(inv, 32, Material.REPEATER, "§7§lRELOAD", "§7Reload only VoidFlame Admin configuration", "§eClick §8» §fReload");
         button(inv, 49, Material.BARRIER, "§c§lCLOSE", "§7Close administration");
-        player.openInventory(inv);
+        p.openInventory(inv);
     }
 
-    private void action(Player p, int slot) {
-        String command = switch (slot) {
-            case 10 -> plugin.getConfig().getString("integrations.kits.command", "kit admin");
-            case 11 -> plugin.getConfig().getString("integrations.arenas.command", "arena");
-            case 12 -> plugin.getConfig().getString("integrations.duels.command", "duels");
-            case 13 -> plugin.getConfig().getString("integrations.queues.command", "duels");
-            case 14 -> plugin.getConfig().getString("integrations.ffa.command", "ffa");
-            case 15 -> plugin.getConfig().getString("integrations.ranks.command", "ranks");
-            case 16 -> plugin.getConfig().getString("integrations.duels.command", "duels");
-            case 19 -> plugin.getConfig().getString("integrations.rewards.command", "coinshop");
-            case 20 -> plugin.getConfig().getString("integrations.ranks.command", "ranks");
-            case 21 -> plugin.getConfig().getString("integrations.security.command", "antibot status");
-            case 22 -> plugin.getConfig().getString("integrations.settings.command", "settings");
-            case 23 -> plugin.getConfig().getString("integrations.worlds.command", "vfworld list");
-            case 24 -> plugin.getConfig().getString("integrations.database.command", "vfrestore");
-            case 25 -> "vfadmin reload";
-            default -> null;
-        };
-        if (slot == 28) {
-            p.closeInventory();
-            Bukkit.getScheduler().runTask(plugin, () -> new StaffGui(plugin).openMain(p));
-            return;
-        }
-        if (command == null) return;
+    private void openPractice(Player p) {
+        Inventory inv = gui("practice", "§8VoidFlame §5• §dPractice");
+        button(inv,10,Material.DIAMOND_SWORD,"§d§lDUELS","§7Match controls and duel administration","§eClick §8» §fOpen");
+        button(inv,11,Material.CHEST,"§d§lKITS","§7Kit editor and kit administration","§eClick §8» §fOpen");
+        button(inv,12,Material.NETHERITE_SWORD,"§d§lARENAS","§7Arena setup and lifecycle","§eClick §8» §fOpen");
+        button(inv,13,Material.NETHER_STAR,"§b§lQUEUES","§7Queue and matchmaking controls","§eClick §8» §fOpen");
+        button(inv,14,Material.ENDER_PEARL,"§a§lFFA","§7FFA administration","§eClick §8» §fOpen");
+        button(inv,15,Material.GOLD_INGOT,"§e§lREWARDS","§7Coins and reward administration","§eClick §8» §fOpen");
+        back(inv,49);
+        p.openInventory(inv);
+    }
+
+    private void openManagement(Player p) {
+        Inventory inv = gui("management", "§8VoidFlame §5• §dManagement");
+        button(inv,10,Material.NAME_TAG,"§6§lRANKS","§7Rank hierarchy and permissions","§eClick §8» §fOpen");
+        button(inv,11,Material.PLAYER_HEAD,"§f§lPLAYERS","§7Player administration and rank assignment","§eClick §8» §fOpen");
+        button(inv,12,Material.COMPASS,"§5§lMENUS","§7Menu configuration and entry points","§eClick §8» §fOpen");
+        button(inv,13,Material.BOOK,"§7§lLOGS","§7Audit and system logs","§eClick §8» §fOpen");
+        button(inv,14,Material.COMPARATOR,"§b§lSETTINGS","§7Practice/server settings","§eClick §8» §fOpen");
+        back(inv,49);
+        p.openInventory(inv);
+    }
+
+    private void openServer(Player p) {
+        Inventory inv = gui("server", "§8VoidFlame §5• §dServer");
+        button(inv,10,Material.GRASS_BLOCK,"§2§lWORLDS","§7Load, unload, teleport and manage worlds","§eClick §8» §fOpen");
+        button(inv,11,Material.CLOCK,"§6§lTIME & WEATHER","§7Set and lock time/weather","§eClick §8» §fOpen");
+        button(inv,12,Material.REDSTONE_BLOCK,"§c§lSERVER MANAGER","§7Whitelist and controlled server actions","§eClick §8» §fOpen");
+        button(inv,13,Material.IRON_SWORD,"§c§lFLAGS","§7PvP, block placement and mob spawning","§eClick §8» §fOpen");
+        back(inv,49);
+        p.openInventory(inv);
+    }
+
+    private void openSecurity(Player p) {
+        Inventory inv = gui("security", "§8VoidFlame §5• §dSecurity");
+        button(inv,11,Material.SHIELD,"§c§lSECURITY STATUS","§7Open the configured security status/control command","§eClick §8» §fOpen");
+        button(inv,13,Material.BARRIER,"§4§lLOCKDOWN CONTROL","§7Open the configured emergency security controls","§eClick §8» §fOpen");
+        button(inv,15,Material.BOOK,"§7§lSECURITY LOGS","§7Open security/audit controls","§eClick §8» §fOpen");
+        back(inv,49);
+        p.openInventory(inv);
+    }
+
+    private void openData(Player p) {
+        Inventory inv = gui("data", "§8VoidFlame §5• §dData");
+        button(inv,11,Material.ENDER_CHEST,"§9§lCORE DATABASE","§7Database status and administration","§eClick §8» §fOpen");
+        button(inv,13,Material.CHEST,"§b§lBACKUP / RECOVERY","§7Core database backup and restore controls","§eClick §8» §fOpen");
+        back(inv,49);
+        p.openInventory(inv);
+    }
+
+    private void route(Player p, String permission, String path) {
+        if (!allowed(p, permission) && !allowed(p, "voidflame.admin.full")) { deny(p); return; }
+        String command = plugin.getConfig().getString(path + ".command", "");
+        if (command == null || command.isBlank()) { p.sendMessage(color("&cThis integration is not configured.")); return; }
         p.closeInventory();
         Bukkit.getScheduler().runTask(plugin, () -> p.performCommand(command));
     }
 
-    @EventHandler
-    public void onClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player p)) return;
-        if (!(event.getView().getTopInventory().getHolder() instanceof Holder)) return;
-        event.setCancelled(true);
-        if (event.getClickedInventory() != event.getView().getTopInventory()) return;
-        int slot = event.getRawSlot();
-        if (slot == 49) { p.closeInventory(); return; }
-        action(p, slot);
-    }
-
-    @EventHandler
-    public void onDrag(InventoryDragEvent event) {
-        if (event.getView().getTopInventory().getHolder() instanceof Holder) event.setCancelled(true);
-    }
-
-    private void fill(Inventory inv) {
-        ItemStack pane = item(Material.BLACK_STAINED_GLASS_PANE, " ");
-        ItemStack accent = item(Material.PURPLE_STAINED_GLASS_PANE, " ");
-        for (int i = 0; i < 54; i++) inv.setItem(i, pane.clone());
-        for (int i : new int[]{1,2,3,4,5,6,7,10,11,12,13,14,15,16,19,20,21,22,23,24,25,46,47,48,50,51,52}) inv.setItem(i, accent.clone());
-    }
-
-    private void button(Inventory inv, int slot, Material material, String name, String... lore) {
-        inv.setItem(slot, item(material, name, lore));
-    }
-
-    private ItemStack item(Material material, String name, String... lore) {
-        ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName(name);
-            meta.setLore(List.of(lore));
-            item.setItemMeta(meta);
+    private void click(Player p, String type, int slot) {
+        if (slot == 49) { open(p); return; }
+        switch (type) {
+            case "main" -> {
+                if (slot == 10) openPractice(p);
+                else if (slot == 12) openManagement(p);
+                else if (slot == 14) openServer(p);
+                else if (slot == 16) openSecurity(p);
+                else if (slot == 28) openData(p);
+                else if (slot == 30) new StaffGui(plugin).openMain(p);
+                else if (slot == 32) { plugin.reloadConfig(); p.sendMessage(color(plugin.getConfig().getString("messages.reload","&aReloaded."))); open(p); }
+            }
+            case "practice" -> {
+                if(slot==10) route(p,"voidflame.admin.duels","integrations.duels");
+                else if(slot==11) route(p,"voidflame.admin.kits","integrations.kits");
+                else if(slot==12) route(p,"voidflame.admin.arenas","integrations.arenas");
+                else if(slot==13) route(p,"voidflame.admin.queues","integrations.queues");
+                else if(slot==14) route(p,"voidflame.admin.ffa","integrations.ffa");
+                else if(slot==15) route(p,"voidflame.admin.rewards","integrations.rewards");
+            }
+            case "management" -> {
+                if(slot==10) route(p,"voidflame.admin.ranks","integrations.ranks");
+                else if(slot==11) route(p,"voidflame.admin.players","integrations.ranks");
+                else if(slot==12) route(p,"voidflame.admin.menus","integrations.menus");
+                else if(slot==13) route(p,"voidflame.admin.logs","integrations.logs");
+                else if(slot==14) route(p,"voidflame.admin.settings","integrations.settings");
+            }
+            case "server" -> {
+                if(slot==10) new StaffGui(plugin).openWorldsFromAdmin(p);
+                else if(slot==11) new StaffGui(plugin).openTimeFromAdmin(p);
+                else if(slot==12) new StaffGui(plugin).openServerFromAdmin(p);
+                else if(slot==13) new StaffGui(plugin).openFlagsFromAdmin(p);
+            }
+            case "security" -> {
+                if(slot==11) route(p,"voidflame.admin.security","integrations.security");
+                else if(slot==13) route(p,"voidflame.admin.security","integrations.security");
+                else if(slot==15) route(p,"voidflame.admin.logs","integrations.logs");
+            }
+            case "data" -> {
+                if(slot==11) route(p,"voidflame.admin.database","integrations.database");
+                else if(slot==13) route(p,"voidflame.admin.database","integrations.database");
+            }
         }
-        return item;
     }
 
-    private static final class Holder implements InventoryHolder {
-        @Override public Inventory getInventory() { return null; }
+    @EventHandler public void onClick(InventoryClickEvent e) {
+        if (!(e.getWhoClicked() instanceof Player p)) return;
+        if (!(e.getView().getTopInventory().getHolder() instanceof Holder h)) return;
+        e.setCancelled(true);
+        if (e.getClickedInventory() != e.getView().getTopInventory()) return;
+        click(p,h.type,e.getRawSlot());
     }
+
+    @EventHandler public void onDrag(InventoryDragEvent e) {
+        if (e.getView().getTopInventory().getHolder() instanceof Holder) e.setCancelled(true);
+    }
+
+    private Inventory gui(String type, String title) {
+        int rows = plugin.getConfig().getInt("gui.rows",6);
+        Inventory inv=Bukkit.createInventory(new Holder(type),Math.max(1,Math.min(6,rows))*9,color(title));
+        Material filler=Material.matchMaterial(plugin.getConfig().getString("gui.filler","BLACK_STAINED_GLASS_PANE"));
+        Material accent=Material.matchMaterial(plugin.getConfig().getString("gui.accent","PURPLE_STAINED_GLASS_PANE"));
+        if(filler==null)filler=Material.BLACK_STAINED_GLASS_PANE;
+        if(accent==null)accent=Material.PURPLE_STAINED_GLASS_PANE;
+        ItemStack pane=item(filler," ");
+        ItemStack glow=item(accent," ");
+        for(int i=0;i<inv.getSize();i++)inv.setItem(i,pane.clone());
+        for(int i=0;i<9&&i<inv.getSize();i++)inv.setItem(i,glow.clone());
+        for(int i=Math.max(0,inv.getSize()-9);i<inv.getSize();i++)inv.setItem(i,glow.clone());
+        return inv;
+    }
+
+    private void button(Inventory inv,int slot,Material material,String name,String... lore){if(slot<inv.getSize())inv.setItem(slot,item(material,name,lore));}
+    private void back(Inventory inv,int slot){button(inv,slot,Material.ARROW,"§7§lBACK","§7Return to Administration");}
+    private ItemStack item(Material m,String name,String... lore){ItemStack i=new ItemStack(m);ItemMeta meta=i.getItemMeta();if(meta!=null){meta.setDisplayName(color(name));meta.setLore(List.of(lore).stream().map(this::color).toList());i.setItemMeta(meta);}return i;}
+    private boolean allowed(Player p,String permission){return p.hasPermission(permission)||p.hasPermission("voidflame.admin.full");}
+    private void deny(Player p){p.sendMessage(color(plugin.getConfig().getString("messages.no-permission","&cNo permission.")));}
+    private String color(String s){return ChatColor.translateAlternateColorCodes('&',s==null?"":s);}
+
+    static final class Holder implements InventoryHolder { final String type; Holder(String type){this.type=type;} @Override public Inventory getInventory(){return null;} }
 }
