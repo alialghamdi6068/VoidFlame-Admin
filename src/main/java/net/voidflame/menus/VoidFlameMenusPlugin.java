@@ -5,11 +5,14 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class VoidFlameMenusPlugin extends JavaPlugin {
     private StaffGui staffGui;
     private AdminAudit audit;
+    private PunishmentService punishments;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         audit = new AdminAudit(this);
+        punishments = new PunishmentService(this);
+        getServer().getPluginManager().registerEvents(punishments, this);
         getCommand("vfadmin").setExecutor(new AdminCommand(this));
         getCommand("vfadmin").setTabCompleter(new AdminCommand(this));
         getCommand("vfstatus").setExecutor(new MetricsCommand(this));
