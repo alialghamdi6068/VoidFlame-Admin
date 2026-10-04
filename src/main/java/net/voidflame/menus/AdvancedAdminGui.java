@@ -165,7 +165,10 @@ public final class AdvancedAdminGui implements Listener {
             return new double[]{a[0], a[1], a[2], value(wins, "v")};
         }).thenCombine(AdminServices.query("SELECT kit, COUNT(*) c FROM duel_matches GROUP BY kit ORDER BY c DESC LIMIT 1"), (a, kit) -> {
             String topKit = kit.isEmpty() ? "N/A" : String.valueOf(kit.get(0).getOrDefault("kit", "N/A"));
-            return new Analytics(a[0], a[1], a[2], a[3], topKit);
+            return new Analytics(a[0], a[1], a[2], a[3], topKit, "N/A");
+        }).thenCombine(AdminServices.query("SELECT name,wins FROM player_profiles ORDER BY wins DESC LIMIT 1"), (a, top) -> {
+            String topPlayer = top.isEmpty() ? "N/A" : String.valueOf(top.get(0).getOrDefault("name", "N/A")) + " (" + top.get(0).getOrDefault("wins", 0) + ")";
+            return new Analytics(a.players,a.matches,a.elo,a.wins,a.topKit,topPlayer);
         }).thenAccept(data -> Bukkit.getScheduler().runTask(plugin, () -> renderAnalytics(p, data)));
     }
 
@@ -175,16 +178,16 @@ public final class AdvancedAdminGui implements Listener {
         button(inv, 12, Material.GOLDEN_SWORD, "§d§lDUELS", "§7Recorded matches: §f" + (long)a.matches);
         button(inv, 14, Material.GOLD_INGOT, "§6§lTOTAL WINS", "§f" + (long)a.wins);
         button(inv, 16, Material.EXPERIENCE_BOTTLE, "§a§lAVERAGE ELO", "§f" + String.format(Locale.ROOT, "%.1f", a.elo));
-        button(inv, 28, Material.CHEST, "§e§lTOP KIT", "§f" + a.topKit);
+        button(inv, 28, Material.CHEST, "§e§lTOP KIT", "§f" + a.topKit);\n        button(inv, 29, Material.PLAYER_HEAD, "§6§lTOP PLAYER", "§f" + a.topPlayer);
         button(inv, 30, Material.IRON_SWORD, "§c§lACTIVE DUELS", "§7Live: §f" + countActive());
         button(inv, 32, Material.HOPPER, "§b§lQUEUE", "§7Queued players: §f" + countQueue());
         button(inv, 34, Material.NETHER_STAR, "§a§lFFA", "§7Online FFA players: §f" + countFfa());
-        button(inv, 40, Material.COMPARATOR, "§f§lWIN RATE", "§7Global: §f" + String.format(Locale.ROOT, "%.1f%%", a.matches <= 0 ? 0 : a.wins * 100.0 / Math.max(1, a.matches)));
+        button(inv, 40, Material.COMPARATOR, "§f§lWIN RATE", "§7Global: §f" + String.format(Locale.ROOT, "%.1f%%", a.matches <= 0 ? 0 : a.wins * 100.0 / Math.max(1, a.wins + losses(a))));
         button(inv, 49, Material.ARROW, "§7§lBACK");
         p.openInventory(inv);
     }
 
-    private long countActive() {
+    private long losses(Analytics a) { return Math.max(0L, (long)a.matches - (long)a.wins); }\n\n    private long countActive() {
         return Bukkit.getWorlds().stream().flatMap(w -> w.getPlayers().stream()).filter(x -> x.getScoreboardTags().contains("voidflame-duel")).count();
     }
     private long countQueue() {
@@ -268,6 +271,6 @@ public final class AdvancedAdminGui implements Listener {
     private long num(List<Map<String,Object>> r){return r.isEmpty()?0:((Number)r.get(0).values().iterator().next()).longValue();}
     private double value(List<Map<String,Object>> r,String k){return r.isEmpty()?0:((Number)r.get(0).getOrDefault(k,0)).doubleValue();}
     private record PendingInput(String action,UUID target,String duration,long createdAt){}
-    private record Analytics(double players,double matches,double elo,double wins,String topKit){}
+    private record Analytics(double players,double matches,double elo,double wins,String topKit,String topPlayer){}
     static final class Holder implements InventoryHolder {final String type;Holder(String type){this.type=type;}public Inventory getInventory(){return null;}}
 }
