@@ -24,7 +24,7 @@ commands:
 permissions:
   voidflame.admin:
     description: Open the central VoidFlame administration console and status tools.
-    default: false
+    default: op
   voidflame.admin.full:
     description: Full unrestricted access to the central administration console.
     default: false
