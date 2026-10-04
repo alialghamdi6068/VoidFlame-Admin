@@ -199,7 +199,9 @@ public final class StaffGui implements Listener {
         put(i,12,Material.CHEST,"&6Inventory","Open target inventory.");
         put(i,13,Material.GOLDEN_APPLE,"&6Heal Me","Restore target.");
         put(i,14,Material.CROSSBOW,"&cClear Inventory","Clear target inventory.");
-        put(i,15,Material.ARROW,"&7Back");
+        put(i,15,Material.ENDER_PEARL,"&bTeleport To","Teleport yourself to target.");
+        put(i,16,Material.PACKED_ICE,t!=null && frozen.contains(t.getUniqueId())?"&aUnfreeze":"&cFreeze","Prevent target movement.");
+        put(i,17,Material.ARROW,"&7Back");
         p.openInventory(i);
     }
     private void playerManager(Player p,int s){
@@ -211,10 +213,12 @@ public final class StaffGui implements Listener {
         else if(s==14)confirm(p,Action.CLEAR_INV);
         else if(s==15){p.teleport(t.getLocation());done(p,"Teleport To");openPlayerManager(p);}
         else if(s==16){if(frozen.contains(t.getUniqueId())){frozen.remove(t.getUniqueId());done(p,"Unfreeze");}else{frozen.add(t.getUniqueId());done(p,"Freeze");}openPlayerManager(p);}
+        else if(s==15){p.teleport(t.getLocation());done(p,"Teleport To");openPlayerManager(p);}
+        else if(s==16){if(frozen.contains(t.getUniqueId())){frozen.remove(t.getUniqueId());done(p,"Unfreeze");}else{frozen.add(t.getUniqueId());done(p,"Freeze");}openPlayerManager(p);}
     }
 
     private void openGamemode(Player p){Inventory i=gui("gamemode",3,"&8Gamemode");put(i,10,Material.GRASS_BLOCK,"&aSurvival");put(i,11,Material.COMMAND_BLOCK,"&bCreative");put(i,12,Material.FEATHER,"&eAdventure");put(i,13,Material.ENDER_EYE,"&5Spectator");put(i,15,Material.ARROW,"&7Back");p.openInventory(i);}
-    private void gamemode(Player p,int s){Player t=target(p);if(s==15){openMain(p);return;}if(t==null)return;GameMode g=s==10?GameMode.SURVIVAL:s==11?GameMode.CREATIVE:s==12?GameMode.ADVENTURE:s==13?GameMode.SPECTATOR:null;if(g!=null){t.setGameMode(g);done(p,"Gamemode");openMain(p);}}
+    private void gamemode(Player p,int s){Player t=target(p);if(s==17){openMain(p);return;}if(t==null)return;GameMode g=s==10?GameMode.SURVIVAL:s==11?GameMode.CREATIVE:s==12?GameMode.ADVENTURE:s==13?GameMode.SPECTATOR:null;if(g!=null){t.setGameMode(g);done(p,"Gamemode");openMain(p);}}
 
     private void openSpeed(Player p){Inventory i=gui("speed",3,"&8Speed Controls");put(i,10,Material.SUGAR,"&fWalk Speed","Click to increase; wraps at max.");put(i,11,Material.FEATHER,"&fFly Speed","Click to increase; wraps at max.");put(i,12,Material.REDSTONE,"&7Reset Speeds");put(i,15,Material.ARROW,"&7Back");p.openInventory(i);}
     private void speed(Player p,int s){Player t=target(p);if(s==15){openMain(p);return;}if(t==null)return;float step=(float)plugin.getConfig().getDouble("settings.speed-step",0.1),max=(float)plugin.getConfig().getDouble("settings.max-speed",1.0);if(s==10)t.setWalkSpeed(next(t.getWalkSpeed(),step,max));else if(s==11)t.setFlySpeed(next(t.getFlySpeed(),step,max));else if(s==12){t.setWalkSpeed(0.2f);t.setFlySpeed(0.1f);}done(p,"Speed");openMain(p);}
