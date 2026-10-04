@@ -41,12 +41,8 @@ integrations:
     command: "practice"
   rewards:
     command: "coinshop"
-  ranks:
-    command: "ranks"
   menus:
     command: "practice"
-  logs:
-    command: "vflogs"
   security:
     command: "antibot status"
   settings:
