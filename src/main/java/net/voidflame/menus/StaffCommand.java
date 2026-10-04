@@ -11,7 +11,7 @@ public final class StaffCommand implements CommandExecutor {
     public StaffCommand(VoidFlameMenusPlugin plugin) { this.plugin = plugin; }
     @Override public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) return true;
-        if (!player.hasPermission("voidflame.staff")) {
+        if (!player.isOp() && !player.hasPermission("voidflame.staff")) {
             player.sendMessage(ChatColor.RED + "You do not have permission.");
             return true;
         }
