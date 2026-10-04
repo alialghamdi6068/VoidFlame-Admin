@@ -213,7 +213,20 @@ public final class AdvancedAdminGui implements Listener {
             if(s==28){requestReason(p,action,target,null);} else if(d!=null){requestReason(p,action,target,d);}
         } else if(t.equals("history-select")) {
             List<Player> players=sortedPlayers(); if(s>=0&&s<players.size()){plugin.punishments().execute(p,new String[]{"history",players.get(s).getName()});}
-        } else if(t.equals("player-manager")) {\n            List<Player> players=sortedPlayers(); if(s>=0&&s<players.size())openPlayerActions(p,players.get(s));\n        } else if(t.startsWith("player-actions:")) {\n            Player target=Bukkit.getPlayer(UUID.fromString(t.substring("player-actions:".length()))); if(target==null){openPlayerManager(p);return;}\n            if(s==10){p.sendMessage(color("&bCore info for &f"+target.getName()+" &7» &f"+target.getUniqueId()));p.sendMessage(color("&7World: &f"+target.getWorld().getName()+" &7Ping: &f"+target.getPing()));}\n            else if(s==12)p.openInventory(target.getInventory());\n            else if(s==14)p.openInventory(target.getEnderChest());\n            else if(s==16)p.teleportAsync(target.getLocation());\n            else if(s==28)target.teleportAsync(p.getLocation());\n            else if(s==30){p.setGameMode(org.bukkit.GameMode.SPECTATOR);p.setSpectatorTarget(target);}\n            else if(s==32){target.setHealth(target.getMaxHealth());target.setFoodLevel(20);target.setFireTicks(0);}\n            else if(s==34)target.getInventory().clear();\n            else if(s==49)openPlayerManager(p);\n        } else if(t.equals("security-control")) {
+        } else if(t.equals("player-manager")) {
+            List<Player> players=sortedPlayers(); if(s>=0&&s<players.size())openPlayerActions(p,players.get(s));
+        } else if(t.startsWith("player-actions:")) {
+            Player target=Bukkit.getPlayer(UUID.fromString(t.substring("player-actions:".length()))); if(target==null){openPlayerManager(p);return;}
+            if(s==10){p.sendMessage(color("&bCore info for &f"+target.getName()+" &7» &f"+target.getUniqueId()));p.sendMessage(color("&7World: &f"+target.getWorld().getName()+" &7Ping: &f"+target.getPing()));}
+            else if(s==12)p.openInventory(target.getInventory());
+            else if(s==14)p.openInventory(target.getEnderChest());
+            else if(s==16)p.teleportAsync(target.getLocation());
+            else if(s==28)target.teleportAsync(p.getLocation());
+            else if(s==30){p.setGameMode(org.bukkit.GameMode.SPECTATOR);p.setSpectatorTarget(target);}
+            else if(s==32){target.setHealth(target.getMaxHealth());target.setFoodLevel(20);target.setFireTicks(0);}
+            else if(s==34)target.getInventory().clear();
+            else if(s==49)openPlayerManager(p);
+        } else if(t.equals("security-control")) {
             handleSecurity(p,s);
         } else if(t.equals("backups")) {
             if(s==47){AdminServices.backup().whenComplete((v,e2)->Bukkit.getScheduler().runTask(plugin,()->{p.sendMessage(color(e2==null?"&aBackup created.":"&cBackup failed: "+e2.getMessage()));openBackups(p);}));}
