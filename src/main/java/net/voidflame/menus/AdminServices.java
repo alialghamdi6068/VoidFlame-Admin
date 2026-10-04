@@ -143,7 +143,7 @@ final class AdminServices {
         catch (Exception e) { return fallback; }
     }
 
-    static boolean setSecurity(String method, boolean value) {
+    static boolean setSecurityInt(String method, int value) { Object service=security(); if(service==null)return false; try{service.getClass().getMethod(method,int.class).invoke(service,value);return true;}catch(Exception e){return false;} }\n\n    static List<Path> backups() { Object db=coreDatabase(); if(db==null)return List.of(); try{Path database=Path.of(String.valueOf(db.getClass().getMethod("databasePath").invoke(db))); Path dir=database.getParent().resolve("backups"); if(!Files.isDirectory(dir))return List.of(); try(var stream=Files.list(dir)){return stream.filter(p->p.getFileName().toString().startsWith("database-")&&p.toString().endsWith(".db")).sorted(Comparator.comparing(Path::toString).reversed()).toList();}}catch(Exception e){return List.of();} }\n\n    static CompletableFuture<Void> restore(Path backup) { Object db=coreDatabase(); if(db==null)return CompletableFuture.failedFuture(new IllegalStateException("VoidFlame-Core database unavailable")); try{Method m=db.getClass().getMethod("restore",Path.class); @SuppressWarnings("unchecked") CompletableFuture<Void> f=(CompletableFuture<Void>)m.invoke(db,backup); return f;}catch(Exception e){return CompletableFuture.failedFuture(e);} }\n\n    static boolean setSecurity(String method, boolean value) {
         Object service = security();
         if (service == null) return false;
         try { service.getClass().getMethod(method, boolean.class).invoke(service, value); return true; }
