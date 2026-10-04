@@ -50,10 +50,8 @@ public final class AdminMenu implements Listener {
 
     private void openManagement(Player p) {
         Inventory inv = gui("management", "§8VoidFlame §5• §dManagement");
-        button(inv,10,Material.NAME_TAG,"§6§lRANKS","§7Rank hierarchy and permissions","§eClick §8» §fOpen");
-        button(inv,11,Material.PLAYER_HEAD,"§f§lPLAYERS","§7Player administration and rank assignment","§eClick §8» §fOpen");
+        button(inv,10,Material.PLAYER_HEAD,"§f§lPLAYERS","§7Player administration and staff controls","§eClick §8» §fOpen");
         button(inv,12,Material.COMPASS,"§5§lMENUS","§7Menu configuration and entry points","§eClick §8» §fOpen");
-        button(inv,13,Material.BOOK,"§7§lLOGS","§7Audit and system logs","§eClick §8» §fOpen");
         button(inv,14,Material.COMPARATOR,"§b§lSETTINGS","§7Practice/server settings","§eClick §8» §fOpen");
         back(inv,49);
         p.openInventory(inv);
@@ -117,10 +115,8 @@ public final class AdminMenu implements Listener {
                 else if(slot==15) route(p,"voidflame.admin.rewards","integrations.rewards");
             }
             case "management" -> {
-                if(slot==10) route(p,"voidflame.admin.ranks","integrations.ranks");
-                else if(slot==11) route(p,"voidflame.admin.players","integrations.players");
+                if(slot==10) route(p,"voidflame.admin.players","integrations.players");
                 else if(slot==12) route(p,"voidflame.admin.menus","integrations.menus");
-                else if(slot==13) route(p,"voidflame.admin.logs","integrations.logs");
                 else if(slot==14) route(p,"voidflame.admin.settings","integrations.settings");
             }
             case "server" -> {
