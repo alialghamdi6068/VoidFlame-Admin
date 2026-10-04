@@ -178,7 +178,8 @@ public final class AdvancedAdminGui implements Listener {
         button(inv, 12, Material.GOLDEN_SWORD, "§d§lDUELS", "§7Recorded matches: §f" + (long)a.matches);
         button(inv, 14, Material.GOLD_INGOT, "§6§lTOTAL WINS", "§f" + (long)a.wins);
         button(inv, 16, Material.EXPERIENCE_BOTTLE, "§a§lAVERAGE ELO", "§f" + String.format(Locale.ROOT, "%.1f", a.elo));
-        button(inv, 28, Material.CHEST, "§e§lTOP KIT", "§f" + a.topKit);\n        button(inv, 29, Material.PLAYER_HEAD, "§6§lTOP PLAYER", "§f" + a.topPlayer);
+        button(inv, 28, Material.CHEST, "§e§lTOP KIT", "§f" + a.topKit);
+        button(inv, 29, Material.PLAYER_HEAD, "§6§lTOP PLAYER", "§f" + a.topPlayer);
         button(inv, 30, Material.IRON_SWORD, "§c§lACTIVE DUELS", "§7Live: §f" + countActive());
         button(inv, 32, Material.HOPPER, "§b§lQUEUE", "§7Queued players: §f" + countQueue());
         button(inv, 34, Material.NETHER_STAR, "§a§lFFA", "§7Online FFA players: §f" + countFfa());
