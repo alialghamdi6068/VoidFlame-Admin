@@ -52,7 +52,7 @@ public final class AdminMenu implements Listener {
         button(inv,10,Material.PLAYER_HEAD,"§f§lPLAYERS","§7Open Staff player manager");
         button(inv,12,Material.COMPASS,"§5§lMENUS","§7Open menu/practice configuration");
         button(inv,14,Material.COMPARATOR,"§b§lSETTINGS","§7Open server/practice settings");
-        button(inv,16,Material.BOOK,"§c§lPUNISHMENTS","§7Ban, mute, warn, kick and history","§eUse §f/vfadmin punish");
+        button(inv,16,Material.BOOK,"§c§lPUNISHMENTS","§7Ban, mute, warn, kick and history","§eClick §8» §fOpen GUI");
         back(inv,49); p.openInventory(inv);
     }
 
@@ -107,7 +107,7 @@ public final class AdminMenu implements Listener {
                 else if(slot==28)openData(p);
                 else if(slot==30)new StaffGui(plugin).openMain(p);
                 else if(slot==32){plugin.reloadConfig();plugin.audit(p.getName(),"RELOAD_ADMIN_CONFIG");p.sendMessage(color(plugin.getConfig().getString("messages.reload","&aReloaded.")));open(p);}
-                else if(slot==34)new AnalyticsCommand(plugin).onCommand(p,null,"vfanalytics",new String[0]);
+                else if(slot==34)new AdvancedAdminGui(plugin).openAnalytics(p);
             }
             case "practice" -> {
                 if(slot==10)route(p,"voidflame.admin.duels","integrations.duels");
@@ -121,7 +121,7 @@ public final class AdminMenu implements Listener {
                 if(slot==10)new StaffGui(plugin).openMain(p);
                 else if(slot==12)route(p,"voidflame.admin.menus","integrations.menus");
                 else if(slot==14)route(p,"voidflame.admin.settings","integrations.settings");
-                else if(slot==16){p.closeInventory();p.sendMessage(color("&eUse &f/vfadmin punish &eor &f/vfadmin punish history <player>"));plugin.audit(p.getName(),"OPEN_PUNISHMENTS");}
+                else if(slot==16)new AdvancedAdminGui(plugin).openPunishments(p);
             }
             case "server" -> {
                 StaffGui staff=new StaffGui(plugin);
