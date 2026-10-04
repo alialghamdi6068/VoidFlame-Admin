@@ -88,6 +88,31 @@ public final class AdvancedAdminGui implements Listener {
         staff.openInventory(inv);
     }
 
+    public void openPlayerManager(Player p) {
+        Inventory inv = gui("player-manager", ROOT + "Player Manager");
+        List<Player> players = sortedPlayers();
+        for (int i=0;i<Math.min(players.size(),45);i++) {
+            Player target=players.get(i);
+            button(inv,i,Material.PLAYER_HEAD,"§f"+target.getName(),"§7Click to manage this player.");
+        }
+        button(inv,49,Material.ARROW,"§7§lBACK");
+        p.openInventory(inv);
+    }
+
+    private void openPlayerActions(Player staff, Player target) {
+        Inventory inv=gui("player-actions:"+target.getUniqueId(),ROOT+"Player • "+target.getName());
+        button(inv,10,Material.BOOK,"§b§lCORE INFO","§7UUID: §f"+target.getUniqueId(),"§7World: §f"+target.getWorld().getName(),"§7Health: §f"+String.format(Locale.ROOT,"%.1f",target.getHealth()),"§7Ping: §f"+target.getPing());
+        button(inv,12,Material.CHEST,"§e§lINVENTORY","§7Open and edit live inventory.");
+        button(inv,14,Material.ENDER_CHEST,"§5§lENDER CHEST","§7Open and edit ender chest.");
+        button(inv,16,Material.COMPASS,"§a§lTELEPORT TO","§7Teleport yourself to the player.");
+        button(inv,28,Material.ENDER_PEARL,"§d§lTELEPORT HERE","§7Teleport the player to you.");
+        button(inv,30,Material.SPYGLASS,"§6§lSPECTATE","§7Set yourself to spectator and follow target.");
+        button(inv,32,Material.HEART_OF_THE_SEA,"§c§lHEAL","§7Restore health and hunger.");
+        button(inv,34,Material.BARRIER,"§c§lCLEAR INVENTORY","§7Clear the player's inventory.");
+        button(inv,49,Material.ARROW,"§7§lBACK");
+        staff.openInventory(inv);
+    }
+
     public void openSecurity(Player p) {
         Inventory inv = gui("security-control", ROOT + "Security Control");
         int rate = AdminServices.securityInt("getMaxActionsPerSecond", 8);
@@ -188,7 +213,7 @@ public final class AdvancedAdminGui implements Listener {
             if(s==28){requestReason(p,action,target,null);} else if(d!=null){requestReason(p,action,target,d);}
         } else if(t.equals("history-select")) {
             List<Player> players=sortedPlayers(); if(s>=0&&s<players.size()){plugin.punishments().execute(p,new String[]{"history",players.get(s).getName()});}
-        } else if(t.equals("security-control")) {
+        } else if(t.equals("player-manager")) {\n            List<Player> players=sortedPlayers(); if(s>=0&&s<players.size())openPlayerActions(p,players.get(s));\n        } else if(t.startsWith("player-actions:")) {\n            Player target=Bukkit.getPlayer(UUID.fromString(t.substring("player-actions:".length()))); if(target==null){openPlayerManager(p);return;}\n            if(s==10){p.sendMessage(color("&bCore info for &f"+target.getName()+" &7» &f"+target.getUniqueId()));p.sendMessage(color("&7World: &f"+target.getWorld().getName()+" &7Ping: &f"+target.getPing()));}\n            else if(s==12)p.openInventory(target.getInventory());\n            else if(s==14)p.openInventory(target.getEnderChest());\n            else if(s==16)p.teleportAsync(target.getLocation());\n            else if(s==28)target.teleportAsync(p.getLocation());\n            else if(s==30){p.setGameMode(org.bukkit.GameMode.SPECTATOR);p.setSpectatorTarget(target);}\n            else if(s==32){target.setHealth(target.getMaxHealth());target.setFoodLevel(20);target.setFireTicks(0);}\n            else if(s==34)target.getInventory().clear();\n            else if(s==49)openPlayerManager(p);\n        } else if(t.equals("security-control")) {
             handleSecurity(p,s);
         } else if(t.equals("backups")) {
             if(s==47){AdminServices.backup().whenComplete((v,e2)->Bukkit.getScheduler().runTask(plugin,()->{p.sendMessage(color(e2==null?"&aBackup created.":"&cBackup failed: "+e2.getMessage()));openBackups(p);}));}
