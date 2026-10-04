@@ -11,7 +11,7 @@ softdepend: [VoidFlame-Core, VoidFlame-Kits, VoidFlame-Arenas, VoidFlame-Duels, 
 commands:
   vfadmin:
     description: Open the unified VoidFlame administration panel.
-    usage: /vfadmin [performance|punish|reload]
+    usage: /vfadmin [punish|reload]
     permission: voidflame.admin
   staff:
     description: Open the VoidFlame staff control panel.
@@ -21,6 +21,10 @@ commands:
     description: Open the VoidFlame staff control panel.
     usage: /staffgui
     permission: voidflame.staff
+  vfanalytics:
+    description: View live VoidFlame server analytics and health metrics.
+    usage: /vfanalytics
+    permission: voidflame.admin.metrics
 
 permissions:
   voidflame.admin:
