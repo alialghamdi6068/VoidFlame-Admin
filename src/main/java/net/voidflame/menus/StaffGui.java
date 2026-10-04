@@ -24,6 +24,7 @@ public final class StaffGui implements Listener {
     private final VoidFlameMenusPlugin plugin;
     public StaffGui(VoidFlameMenusPlugin plugin) { this.plugin = plugin; }
     private final Map<UUID, UUID> targets = new HashMap<>();
+    private final Set<UUID> frozen = new HashSet<>();
     private final Map<UUID, Long> confirmations = new HashMap<>();
     private final Map<UUID, Action> pending = new HashMap<>();
     private boolean lockTime, lockWeather;
@@ -133,7 +134,12 @@ public final class StaffGui implements Listener {
     }
 
     @EventHandler public void drag(InventoryDragEvent e){if(e.getView().getTopInventory().getHolder() instanceof Holder)e.setCancelled(true);}
-    @EventHandler public void quit(PlayerQuitEvent e){targets.entrySet().removeIf(x->x.getValue().equals(e.getPlayer().getUniqueId()));}
+    @EventHandler public void quit(PlayerQuitEvent e){targets.entrySet().removeIf(x->x.getValue().equals(e.getPlayer().getUniqueId()));frozen.remove(e.getPlayer().getUniqueId());}
+
+    @EventHandler public void freezeMove(org.bukkit.event.player.PlayerMoveEvent e){
+        if(!frozen.contains(e.getPlayer().getUniqueId())) return;
+        if(e.getFrom().getX()!=e.getTo().getX() || e.getFrom().getY()!=e.getTo().getY() || e.getFrom().getZ()!=e.getTo().getZ()) e.setTo(e.getFrom());
+    }
 
     private void main(Player p,int s){
         if(!(p.hasPermission("voidflame.staff") || p.hasPermission("voidflame.admin") || p.hasPermission("voidflame.admin.full"))){msg(p,"no-permission");return;}
@@ -197,12 +203,14 @@ public final class StaffGui implements Listener {
         p.openInventory(i);
     }
     private void playerManager(Player p,int s){
-        Player t=target(p);if(s==15){openMain(p);return;}if(t==null){openPlayers(p);return;}
+        Player t=target(p);if(s==17){openMain(p);return;}if(t==null){openPlayers(p);return;}
         if(s==10){openPlayers(p);return;}
         if(s==11){p.sendMessage(color("&8Health: &f"+String.format("%.1f",t.getHealth())+" &7| Food: &f"+t.getFoodLevel()+" &7| XP: &f"+t.getLevel()+" &7| Mode: &f"+t.getGameMode()+" &7| World: &f"+t.getWorld().getName()));}
         else if(s==12)p.openInventory(t.getInventory());
         else if(s==13){heal(t);done(p,"Heal Me");}
         else if(s==14)confirm(p,Action.CLEAR_INV);
+        else if(s==15){p.teleport(t.getLocation());done(p,"Teleport To");openPlayerManager(p);}
+        else if(s==16){if(frozen.contains(t.getUniqueId())){frozen.remove(t.getUniqueId());done(p,"Unfreeze");}else{frozen.add(t.getUniqueId());done(p,"Freeze");}openPlayerManager(p);}
     }
 
     private void openGamemode(Player p){Inventory i=gui("gamemode",3,"&8Gamemode");put(i,10,Material.GRASS_BLOCK,"&aSurvival");put(i,11,Material.COMMAND_BLOCK,"&bCreative");put(i,12,Material.FEATHER,"&eAdventure");put(i,13,Material.ENDER_EYE,"&5Spectator");put(i,15,Material.ARROW,"&7Back");p.openInventory(i);}
