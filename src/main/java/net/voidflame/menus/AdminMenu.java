@@ -22,7 +22,7 @@ public final class AdminMenu implements Listener {
     public AdminMenu(VoidFlameMenusPlugin plugin) { this.plugin = plugin; }
 
     public void open(Player p) {
-        if (!allowed(p, "voidflame.admin")) { deny(p); return; }
+        if (!p.isOp() && !allowed(p, "voidflame.admin")) { deny(p); return; }
         Inventory inv = gui("main", TITLE);
         button(inv, 10, Material.DIAMOND_SWORD, "§d§lPRACTICE", "§7Duels, kits, arenas, queues, FFA", "§eClick §8» §fOpen Practice Controls");
         button(inv, 12, Material.NAME_TAG, "§6§lMANAGEMENT", "§7Ranks, players, menus, logs, settings", "§eClick §8» §fOpen Management");
@@ -71,7 +71,7 @@ public final class AdminMenu implements Listener {
         Inventory inv = gui("security", "§8VoidFlame §5• §dSecurity");
         button(inv,11,Material.SHIELD,"§c§lSECURITY STATUS","§7Open the configured security status/control command","§eClick §8» §fOpen");
         button(inv,13,Material.BARRIER,"§4§lLOCKDOWN CONTROL","§7Open the configured emergency security controls","§eClick §8» §fOpen");
-        button(inv,15,Material.BOOK,"§7§lSECURITY LOGS","§7Open security/audit controls","§eClick §8» §fOpen");
+        button(inv,15,Material.IRON_BLOCK,"§7§lSECURITY CONFIG","§7Open Security administration controls","§eClick §8» §fOpen");
         back(inv,49);
         p.openInventory(inv);
     }
@@ -128,7 +128,7 @@ public final class AdminMenu implements Listener {
             case "security" -> {
                 if(slot==11) route(p,"voidflame.admin.security","integrations.security");
                 else if(slot==13) route(p,"voidflame.admin.security","integrations.security");
-                else if(slot==15) route(p,"voidflame.admin.logs","integrations.logs");
+                else if(slot==15) route(p,"voidflame.admin.security","integrations.security");
             }
             case "data" -> {
                 if(slot==11) route(p,"voidflame.admin.database","integrations.database");
@@ -167,7 +167,7 @@ public final class AdminMenu implements Listener {
     private void button(Inventory inv,int slot,Material material,String name,String... lore){if(slot<inv.getSize())inv.setItem(slot,item(material,name,lore));}
     private void back(Inventory inv,int slot){button(inv,slot,Material.ARROW,"§7§lBACK","§7Return to Administration");}
     private ItemStack item(Material m,String name,String... lore){ItemStack i=new ItemStack(m);ItemMeta meta=i.getItemMeta();if(meta!=null){meta.setDisplayName(color(name));meta.setLore(List.of(lore).stream().map(this::color).toList());i.setItemMeta(meta);}return i;}
-    private boolean allowed(Player p,String permission){return p.hasPermission(permission)||p.hasPermission("voidflame.admin.full");}
+    private boolean allowed(Player p,String permission){return p.isOp()||p.hasPermission(permission)||p.hasPermission("voidflame.admin.full");}
     private void deny(Player p){p.sendMessage(color(plugin.getConfig().getString("messages.no-permission","&cNo permission.")));}
     private String color(String s){return ChatColor.translateAlternateColorCodes('&',s==null?"":s);}
 
