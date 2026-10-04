@@ -1,80 +1,196 @@
 # ================================================================
-# VoidFlame Admin • Central Administration Console
-# Paper 26.2 • Java 25
+# VoidFlame Admin | Central Administration
+# Paper 26.2 | Java 25
+# ================================================================
+#
+# This file controls the Admin/Staff GUI and its integrations.
+# Keep values simple and grouped by function.
 # ================================================================
 
+# ------------------------------------------------
+# GUI
+# ------------------------------------------------
 gui:
+  # Main administration menu title.
   title: "&8VoidFlame &5• &dAdministration"
+
+  # Inventory size: 6 rows = 54 slots.
   rows: 6
+
+  # Decorative filler item used for empty GUI slots.
   filler: "BLACK_STAINED_GLASS_PANE"
+
+  # Accent item used by the GUI layout.
   accent: "PURPLE_STAINED_GLASS_PANE"
+
+  # Maximum number of entries shown on one page.
   page-size: 45
 
+
+# ------------------------------------------------
+# SECURITY
+# ------------------------------------------------
 security:
+  # Require confirmation before destructive/admin actions.
   destructive-confirmation: true
+
+  # How long the confirmation remains valid.
   confirmation-seconds: 15
+
+  # Write administrative actions to the Admin audit log.
   audit-actions: true
 
+
+# ------------------------------------------------
+# ADMIN LOGGING
+# ------------------------------------------------
 logging:
   file:
     enabled: true
     path: "logs/admin.log"
 
+
+# ------------------------------------------------
+# ADMIN SETTINGS
+# ------------------------------------------------
 settings:
+  # Amount added/removed when changing movement speed.
   speed-step: 0.1
+
+  # Maximum movement speed allowed by the Admin controls.
   max-speed: 1.0
+
+  # Number of lines cleared by the clear-chat action.
   clear-chat-lines: 100
+
+  # Whether kick-all is allowed to leave staff online.
   kick-all-except-staff: true
 
+
+# ------------------------------------------------
+# PLUGIN INTEGRATIONS
+# ------------------------------------------------
+# These entries define commands opened by Admin GUI buttons.
+# The Admin plugin does not duplicate the functionality of
+# external/native plugins.
+#
+# Current VoidFlame integrations:
+# - ZonePractice Pro
+# - VoidFlame-Core
+# - VoidFlame-Security
+#
+# Ranks and Logs are intentionally NOT included.
+# ------------------------------------------------
 integrations:
-  # ZonePractice Pro admin entry points. These commands open its native GUIs/controls;
-  # VoidFlame Admin does not duplicate the Practice engine.
+
+  # Practice / Duels controls
   duels:
     command: "setup"
+
+  # Kit editor
   kits:
     command: "editor"
+
+  # Arena management
   arenas:
     command: "arena"
+
+  # Queue management
   queues:
     command: "practice"
+
+  # FFA management
   ffa:
     command: "practice"
+
+  # Coin/reward shop
   rewards:
     command: "coinshop"
+
+  # General practice/menu controls
   menus:
     command: "practice"
+
+  # VoidFlame-Security controls
   security:
     command: "antibot status"
+
+  # Server/practice settings
   settings:
     command: "settings"
+
+  # Staff/player administration
   players:
     command: "staffgui"
+
+  # VoidFlame-Core world management
   worlds:
     command: "vfworld list"
+
+  # VoidFlame-Core database restore
   database:
     command: "vfrestore"
+
+  # Staff control panel
   staff:
     command: "staffgui"
 
+
+# ------------------------------------------------
+# PUNISHMENTS
+# ------------------------------------------------
 punishments:
+  # Enable punishment controls in the Admin panel.
   enabled: true
+
+  # Require confirmation before punishment actions.
   require-confirmation: true
+
+  # Number of punishment history entries per page.
   history-page-size: 9
+
+  # Used when no punishment reason is supplied.
   default-reason: "No reason provided"
+
+  # Prevent lower-ranked staff from punishing higher-ranked staff.
   hierarchy-enforced: true
+
+  # How often expired punishments are cleaned up.
   expiry-cleanup-seconds: 30
 
+
+# ------------------------------------------------
+# TIME & WEATHER
+# ------------------------------------------------
 time-weather:
+  # Lock the configured time instead of allowing normal progression.
   lock-time: false
+
+  # Lock the configured weather instead of allowing normal changes.
   lock-weather: false
+
+  # Minecraft time value used when lock-time is enabled.
   time: 6000
+
+  # Weather state used when lock-weather is enabled.
   storm: false
 
+
+# ------------------------------------------------
+# WORLD FLAGS
+# ------------------------------------------------
+# These values are retained for compatibility with existing
+# Admin controls.
+# ------------------------------------------------
 flags:
   pvp: true
   block-place: true
   mob-spawning: true
 
+
+# ------------------------------------------------
+# MESSAGES
+# ------------------------------------------------
 messages:
   no-permission: "&cYou do not have permission for this section."
   action-disabled: "&cThis administration action is disabled."
