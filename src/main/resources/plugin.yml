@@ -12,6 +12,7 @@ commands:
   vfadmin:
     description: Open the unified VoidFlame administration panel.
     usage: /vfadmin [performance|punish|reload]
+    permission: voidflame.admin
   staff:
     description: Open the VoidFlame staff control panel.
     usage: /staff
