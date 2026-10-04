@@ -103,7 +103,7 @@ public final class AdminMenu implements Listener {
                 if(slot==10)openPractice(p);
                 else if(slot==12)openManagement(p);
                 else if(slot==14)openServer(p);
-                else if(slot==16)openSecurity(p);
+                else if(slot==16)new AdvancedAdminGui(plugin).openSecurity(p);
                 else if(slot==28)openData(p);
                 else if(slot==30)new StaffGui(plugin).openMain(p);
                 else if(slot==32){plugin.reloadConfig();plugin.audit(p.getName(),"RELOAD_ADMIN_CONFIG");p.sendMessage(color(plugin.getConfig().getString("messages.reload","&aReloaded.")));open(p);}
@@ -118,7 +118,7 @@ public final class AdminMenu implements Listener {
                 else if(slot==15)route(p,"voidflame.admin.rewards","integrations.rewards");
             }
             case "management" -> {
-                if(slot==10)new StaffGui(plugin).openMain(p);
+                if(slot==10)new AdvancedAdminGui(plugin).openPlayerManager(p);
                 else if(slot==12)route(p,"voidflame.admin.menus","integrations.menus");
                 else if(slot==14)route(p,"voidflame.admin.settings","integrations.settings");
                 else if(slot==16)new AdvancedAdminGui(plugin).openPunishments(p);
