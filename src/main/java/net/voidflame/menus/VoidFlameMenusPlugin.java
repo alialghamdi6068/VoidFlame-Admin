@@ -15,6 +15,7 @@ public final class VoidFlameMenusPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(punishments, this);
         getCommand("vfadmin").setExecutor(new AdminCommand(this));
         getCommand("vfadmin").setTabCompleter(new AdminCommand(this));
+        getCommand("vfanalytics").setExecutor(new AnalyticsCommand(this));
         getCommand("staff").setExecutor(new StaffCommand(this));
         getCommand("staffgui").setExecutor(new StaffCommand(this));
         getServer().getPluginManager().registerEvents(new AdminMenu(this), this);
