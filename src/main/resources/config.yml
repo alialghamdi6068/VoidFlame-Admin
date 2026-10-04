@@ -194,5 +194,5 @@ flags:
 messages:
   no-permission: "&cYou do not have permission for this section."
   action-disabled: "&cThis administration action is disabled."
-  action: "&aAction completed: &f%action%"
+  action: "&aAction completed: &f%action%"\n  world-operation-failed: "&cWorld operation failed. Check VoidFlame-Core logs."
   reload: "&aVoidFlame Admin configuration reloaded."
