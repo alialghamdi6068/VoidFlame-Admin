@@ -112,7 +112,8 @@ public final class StaffGui implements Listener {
     @EventHandler public void click(InventoryClickEvent e) {
         if(!(e.getWhoClicked() instanceof Player p))return;
         if(!(e.getView().getTopInventory().getHolder() instanceof Holder h))return;
-        e.setCancelled(true);\n        if(e.getClickedInventory()!=e.getView().getTopInventory()) return;
+        e.setCancelled(true);
+        if(e.getClickedInventory()!=e.getView().getTopInventory()) return;
         int s=e.getRawSlot();
         switch(h.type){
             case "main" -> main(p,s);
