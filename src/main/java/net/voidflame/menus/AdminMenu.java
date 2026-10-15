@@ -40,7 +40,7 @@ public final class AdminMenu implements Listener {
         Inventory inv=gui("practice","§8VoidFlame §5• §aSMP Systems");
         button(inv,10,Material.GOLD_INGOT,"§6§lECONOMY","§7View your SMP balance","§eClick §8» §fOpen /bal");
         button(inv,11,Material.EMERALD,"§a§lQUICK BUY","§7Open the player market","§eClick §8» §fOpen /shop");
-        button(inv,12,Material.AUCTION,"§e§lAUCTION HOUSE","§7Browse player listings","§eClick §8» §fOpen /ah");
+        button(inv,12,Material.CHEST,"§e§lAUCTION HOUSE","§7Browse player listings","§eClick §8» §fOpen /ah");
         button(inv,13,Material.BARREL,"§b§lBUYER ORDERS","§7Open funded buyer orders","§eClick §8» §fOpen /orders");
         button(inv,14,Material.PLAYER_HEAD,"§d§lSOCIAL","§7Open friends and following","§eClick §8» §fOpen /friends");
         button(inv,15,Material.SHIELD,"§c§lSECURITY","§7View AntiBot status","§eClick §8» §fRun /antibot status");
