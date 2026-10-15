@@ -24,7 +24,7 @@ public final class AdminMenu implements Listener {
     public void open(Player p) {
         if (!p.isOp()) { deny(p); return; }
         Inventory inv = gui("main", TITLE);
-        button(inv,10,Material.GRASS_BLOCK,"§a§lSMP SYSTEMS","§7Economy, markets, orders, social and security","§eClick §8» §fOpen");
+        button(inv,10,Material.DIAMOND_SWORD,"§d§lPRACTICE","§7Duels, kits, arenas, queues and FFA","§eClick §8» §fOpen");
         button(inv,12,Material.NAME_TAG,"§6§lMANAGEMENT","§7Players, menus and server settings","§eClick §8» §fOpen");
         button(inv,14,Material.REDSTONE,"§b§lSERVER","§7Worlds, time, weather, flags and whitelist","§eClick §8» §fOpen");
         button(inv,16,Material.SHIELD,"§c§lSECURITY","§7Live AntiBot controls and lockdown","§eClick §8» §fOpen");
@@ -37,22 +37,21 @@ public final class AdminMenu implements Listener {
     }
 
     private void openPractice(Player p) {
-        Inventory inv=gui("practice","§8VoidFlame §5• §aSMP Systems");
-        button(inv,10,Material.GOLD_INGOT,"§6§lECONOMY","§7View your SMP balance","§eClick §8» §fOpen /bal");
-        button(inv,11,Material.EMERALD,"§a§lQUICK BUY","§7Open the player market","§eClick §8» §fOpen /shop");
-        button(inv,12,Material.CHEST,"§e§lAUCTION HOUSE","§7Browse player listings","§eClick §8» §fOpen /ah");
-        button(inv,13,Material.BARREL,"§b§lBUYER ORDERS","§7Open funded buyer orders","§eClick §8» §fOpen /orders");
-        button(inv,14,Material.PLAYER_HEAD,"§d§lSOCIAL","§7Open friends and following","§eClick §8» §fOpen /friends");
-        button(inv,15,Material.SHIELD,"§c§lSECURITY","§7View AntiBot status","§eClick §8» §fRun /antibot status");
-        button(inv,16,Material.COMPARATOR,"§5§lTAB & SCOREBOARD","§7Reload custom SMP TAB","§eClick §8» §fRun /vftab reload");
+        Inventory inv=gui("practice","§8VoidFlame §5• §dPractice");
+        button(inv,10,Material.DIAMOND_SWORD,"§d§lDUELS","§7Open duel administration");
+        button(inv,11,Material.CHEST,"§d§lKITS","§7Open kit administration/editor");
+        button(inv,12,Material.NETHERITE_SWORD,"§d§lARENAS","§7Open arena administration");
+        button(inv,13,Material.NETHER_STAR,"§b§lQUEUES","§7Open queue/matchmaking controls");
+        button(inv,14,Material.ENDER_PEARL,"§a§lFFA","§7Open FFA controls");
+        button(inv,15,Material.GOLD_INGOT,"§e§lREWARDS","§7Open coins/rewards controls");
         back(inv,49); p.openInventory(inv);
     }
 
     private void openManagement(Player p) {
         Inventory inv=gui("management","§8VoidFlame §5• §dManagement");
         button(inv,10,Material.PLAYER_HEAD,"§f§lPLAYERS","§7Open Staff player manager");
-        button(inv,12,Material.COMPASS,"§5§lPLAYER MENU","§7Open the native SMP dashboard");
-        button(inv,14,Material.COMPARATOR,"§b§lPLAYER SETTINGS","§7Open native SMP settings");
+        button(inv,12,Material.COMPASS,"§5§lMENUS","§7Open menu/practice configuration");
+        button(inv,14,Material.COMPARATOR,"§b§lSETTINGS","§7Open server/practice settings");
         button(inv,16,Material.BOOK,"§c§lPUNISHMENTS","§7Ban, mute, warn, kick and history","§eClick §8» §fOpen GUI");
         back(inv,49); p.openInventory(inv);
     }
@@ -111,25 +110,17 @@ public final class AdminMenu implements Listener {
                 else if(slot==34)new AdvancedAdminGui(plugin).openAnalytics(p);
             }
             case "practice" -> {
-                String command = switch (slot) {
-                    case 10 -> "bal";
-                    case 11 -> "shop";
-                    case 12 -> "ah";
-                    case 13 -> "orders";
-                    case 14 -> "friends";
-                    case 15 -> "antibot status";
-                    case 16 -> "vftab reload";
-                    default -> "";
-                };
-                if (!command.isBlank()) {
-                    p.closeInventory();
-                    Bukkit.getScheduler().runTask(plugin, () -> p.performCommand(command));
-                }
+                if(slot==10)route(p,"voidflame.admin.duels","integrations.duels");
+                else if(slot==11)route(p,"voidflame.admin.kits","integrations.kits");
+                else if(slot==12)route(p,"voidflame.admin.arenas","integrations.arenas");
+                else if(slot==13)route(p,"voidflame.admin.queues","integrations.queues");
+                else if(slot==14)route(p,"voidflame.admin.ffa","integrations.ffa");
+                else if(slot==15)route(p,"voidflame.admin.rewards","integrations.rewards");
             }
             case "management" -> {
                 if(slot==10)new AdvancedAdminGui(plugin).openPlayerManager(p);
-                else if(slot==12){p.closeInventory();Bukkit.getScheduler().runTask(plugin,()->p.performCommand("vfmenu"));}
-                else if(slot==14){p.closeInventory();Bukkit.getScheduler().runTask(plugin,()->p.performCommand("vfsettings"));}
+                else if(slot==12)route(p,"voidflame.admin.menus","integrations.menus");
+                else if(slot==14)route(p,"voidflame.admin.settings","integrations.settings");
                 else if(slot==16)new AdvancedAdminGui(plugin).openPunishments(p);
             }
             case "server" -> {

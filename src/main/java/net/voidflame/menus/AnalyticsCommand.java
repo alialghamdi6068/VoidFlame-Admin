@@ -41,61 +41,31 @@ public final class AnalyticsCommand implements CommandExecutor {
         sender.sendMessage(ChatColor.WHITE+"Worlds: "+Bukkit.getWorlds().size()+" | Threads: "+threadCount()+" | Java: "+Runtime.version().feature());
         sender.sendMessage(ChatColor.WHITE+"Uptime: "+uptime()+" | Disk Free: "+diskFree()+" | GC: "+gcCollections());
 
-        var profilesFuture = AdminServices.query("SELECT COUNT(*) AS c FROM player_profiles_smp");
-        var accountsFuture = AdminServices.query("SELECT COUNT(*) AS c FROM economy_accounts");
-        var listingsFuture = AdminServices.query("SELECT COUNT(*) AS c FROM market_listings WHERE status='ACTIVE' AND expires_at>?", System.currentTimeMillis());
-        var ordersFuture = AdminServices.query("SELECT COUNT(*) AS c FROM buy_orders WHERE status='OPEN' AND expires_at>?", System.currentTimeMillis());
-        var friendsFuture = AdminServices.query("SELECT COUNT(*) AS c FROM social_relationships WHERE relationship_type='FRIEND' AND status='ACCEPTED'");
-        var topKillsFuture = AdminServices.query("SELECT last_known_name AS name,kills,deaths,playtime_seconds FROM player_profiles_smp ORDER BY kills DESC,deaths ASC LIMIT 5");
-        var topBalancesFuture = AdminServices.query("SELECT COALESCE(s.last_known_name,e.uuid) AS name,e.balance FROM economy_accounts e LEFT JOIN player_profiles_smp s ON s.uuid=e.uuid ORDER BY e.balance DESC LIMIT 5");
-        java.util.concurrent.CompletableFuture.allOf(profilesFuture, accountsFuture, listingsFuture, ordersFuture,
-                friendsFuture, topKillsFuture, topBalancesFuture).thenAccept(ignored ->
-                Bukkit.getScheduler().runTask(plugin, () -> {
-                    List<Map<String,Object>> profileRows = profilesFuture.join();
-                    List<Map<String,Object>> accountRows = accountsFuture.join();
-                    List<Map<String,Object>> listingRows = listingsFuture.join();
-                    List<Map<String,Object>> orderRows = ordersFuture.join();
-                    List<Map<String,Object>> friendRows = friendsFuture.join();
-                    List<Map<String,Object>> topKillRows = topKillsFuture.join();
-                    List<Map<String,Object>> topBalanceRows = topBalancesFuture.join();
+        AdminServices.query("SELECT COUNT(*) AS c FROM player_profiles").thenCombine(
+                AdminServices.query("SELECT COUNT(*) AS c FROM duel_matches"),
+                (players,duels)->new Object[]{players,duels}
+        ).thenCombine(AdminServices.query("SELECT kit,COUNT(*) AS c FROM duel_matches GROUP BY kit ORDER BY c DESC LIMIT 5"),
+                (base,kits)->new Object[]{base[0],base[1],kits}
+        ).thenCombine(AdminServices.query("SELECT name,wins,losses,winstreak,best_winstreak,elo,coins FROM player_profiles ORDER BY elo DESC LIMIT 5"),
+                (all,top)->new Object[]{all[0],all[1],all[2],top}
+        ).thenAccept(data -> Bukkit.getScheduler().runTask(plugin,()->{
+            @SuppressWarnings("unchecked") List<Map<String,Object>> playerRows=(List<Map<String,Object>>)data[0];
+            @SuppressWarnings("unchecked") List<Map<String,Object>> duelRows=(List<Map<String,Object>>)data[1];
+            @SuppressWarnings("unchecked") List<Map<String,Object>> kitRows=(List<Map<String,Object>>)data[2];
+            @SuppressWarnings("unchecked") List<Map<String,Object>> topRows=(List<Map<String,Object>>)data[3];
 
-                    sender.sendMessage("");
-                    sender.sendMessage(ChatColor.AQUA + "Core SMP Metrics");
-                    sender.sendMessage(ChatColor.WHITE + "SMP profiles: " + number(profileRows, "c")
-                            + " | Economy accounts: " + number(accountRows, "c"));
-                    sender.sendMessage(ChatColor.WHITE + "Active listings: " + number(listingRows, "c")
-                            + " | Open buyer orders: " + number(orderRows, "c"));
-                    sender.sendMessage(ChatColor.WHITE + "Accepted friendship records: " + number(friendRows, "c"));
-                    sender.sendMessage(ChatColor.WHITE + "Top Kills: " + formatSmpPlayers(topKillRows));
-                    sender.sendMessage(ChatColor.WHITE + "Top Balances: " + formatBalances(topBalanceRows));
-                    plugin.audit(sender.getName(), "VIEW_SMP_ANALYTICS");
-                })).exceptionally(error -> {
-                    Bukkit.getScheduler().runTask(plugin, () -> sender.sendMessage(
-                            ChatColor.RED + "Core SMP analytics unavailable: " + error.getMessage()));
-                    return null;
-                });
+            sender.sendMessage("");
+            sender.sendMessage(ChatColor.AQUA+"Core Practice Metrics");
+            sender.sendMessage(ChatColor.WHITE+"Players in Core: "+number(playerRows,"c")+" | Duel matches: "+number(duelRows,"c"));
+            sender.sendMessage(ChatColor.WHITE+"Top Kits: "+formatKits(kitRows));
+            sender.sendMessage(ChatColor.WHITE+"Top ELO: "+formatPlayers(topRows));
+            plugin.audit(sender.getName(),"VIEW_SERVER_ANALYTICS");
+        })).exceptionally(error->{Bukkit.getScheduler().runTask(plugin,()->sender.sendMessage(ChatColor.RED+"Core analytics unavailable: "+error.getMessage()));return null;});
         return true;
     }
 
-    private String formatSmpPlayers(List<Map<String,Object>> rows) {
-        if (rows.isEmpty()) return "N/A";
-        StringBuilder out = new StringBuilder();
-        for (Map<String,Object> row : rows) {
-            if (out.length() > 0) out.append(", ");
-            out.append(row.get("name")).append(" (").append(row.get("kills")).append(" kills / ")
-                    .append(row.get("deaths")).append(" deaths)");
-        }
-        return out.toString();
-    }
-    private String formatBalances(List<Map<String,Object>> rows) {
-        if (rows.isEmpty()) return "N/A";
-        StringBuilder out = new StringBuilder();
-        for (Map<String,Object> row : rows) {
-            if (out.length() > 0) out.append(", ");
-            out.append(row.get("name")).append(" $").append(fmtNumber(row.get("balance")));
-        }
-        return out.toString();
-    }
+    private String formatKits(List<Map<String,Object>> rows){ if(rows.isEmpty())return "N/A"; StringBuilder s=new StringBuilder(); for(Map<String,Object> r:rows){if(s.length()>0)s.append(", ");s.append(r.get("kit")).append(" (").append(r.get("c")).append(")");}return s.toString(); }
+    private String formatPlayers(List<Map<String,Object>> rows){ if(rows.isEmpty())return "N/A"; StringBuilder s=new StringBuilder(); for(Map<String,Object> r:rows){if(s.length()>0)s.append(", ");s.append(r.get("name")).append(" ").append(fmtNumber(r.get("elo")));}return s.toString(); }
     private String number(List<Map<String,Object>> rows,String key){return rows.isEmpty()?"0":String.valueOf(rows.get(0).getOrDefault(key,0));}
     private String fmtNumber(Object value){return value instanceof Number n?String.format(Locale.ROOT,"%.0f",n.doubleValue()):String.valueOf(value);}
 

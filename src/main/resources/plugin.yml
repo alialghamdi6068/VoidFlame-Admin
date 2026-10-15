@@ -1,13 +1,12 @@
 name: VoidFlame-Admin
 version: 1.0.0
 main: net.voidflame.menus.VoidFlameMenusPlugin
-description: VoidFlameMC SMP administration, staff controls, server metrics and audit logging.
+description: Unified VoidFlame administration, staff controls, server metrics and audit logging.
 author: VoidFlame
 website: https://github.com/alialghamdi6068/VoidFlame-Admin
 api-version: '26.2'
 load: POSTWORLD
-depend: [VoidFlame-Core]
-softdepend: [VoidFlame-Economy, VoidFlame-Shop, VoidFlame-Sell, VoidFlame-AH, VoidFlame-Order, VoidFlame-Social, VoidFlame-Security, VoidFlame-Logs, VoidFlame-TAB, VoidFlame-UI, LuckPerms]
+softdepend: [VoidFlame-Core, VoidFlame-Kits, VoidFlame-Arenas, VoidFlame-Duels, VoidFlame-Security, ZonePracticePro]
 
 commands:
   vfadmin:
