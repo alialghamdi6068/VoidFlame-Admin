@@ -1,5 +1,6 @@
 package net.voidflame.menus;
 
+import org.bukkit.Bukkit;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -30,6 +31,7 @@ final class AdminAudit {
     }
 
     void log(String actor, String action) {
+        if (writeToCore(actor, action)) return;
         String line = Instant.now() + " | actor=" + safe(actor) + " | action=" + safe(action)
                 + System.lineSeparator();
         writer.execute(() -> {
@@ -40,6 +42,20 @@ final class AdminAudit {
                 // Logging must never interrupt an administrative action.
             }
         });
+    }
+
+    private boolean writeToCore(String actor, String action) {
+        try {
+            Class<?> type = Class.forName("net.voidflame.core.api.AuditLogService");
+            var registration = Bukkit.getServicesManager().getRegistration(type);
+            if (registration == null || registration.getProvider() == null) return false;
+            Object provider = registration.getProvider();
+            var method = type.getMethod("log", String.class, String.class, String.class, String.class);
+            method.invoke(provider, actor, action, "VoidFlame-Admin", "source=VoidFlame-Admin");
+            return true;
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            return false;
+        }
     }
 
     void shutdown() {
