@@ -1,5 +1,13 @@
 package net.voidflame.menus;
 
+import io.papermc.paper.dialog.Dialog;
+import io.papermc.paper.registry.data.dialog.ActionButton;
+import io.papermc.paper.registry.data.dialog.DialogBase;
+import io.papermc.paper.registry.data.dialog.action.DialogAction;
+import io.papermc.paper.registry.data.dialog.body.DialogBody;
+import io.papermc.paper.registry.data.dialog.type.DialogType;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -23,17 +31,49 @@ public final class AdminMenu implements Listener {
 
     public void open(Player p) {
         if (!AdminAccess.hasAdminAccess(p)) { deny(p); return; }
-        Inventory inv = gui("main", TITLE);
-        button(inv,10,Material.DIAMOND_SWORD,"§d§lPRACTICE","§7Duels, kits, arenas, queues and FFA","§eClick §8» §fOpen");
-        button(inv,12,Material.NAME_TAG,"§6§lMANAGEMENT","§7Players, menus and server settings","§eClick §8» §fOpen");
-        button(inv,14,Material.REDSTONE,"§b§lSERVER","§7Worlds, time, weather, flags and whitelist","§eClick §8» §fOpen");
-        button(inv,16,Material.SHIELD,"§c§lSECURITY","§7Live AntiBot controls and lockdown","§eClick §8» §fOpen");
-        button(inv,28,Material.ENDER_CHEST,"§9§lDATA","§7Core database status and backup/recovery","§eClick §8» §fOpen");
-        button(inv,30,Material.NETHER_STAR,"§5§lSTAFF","§7Professional staff/player tools","§eClick §8» §fOpen");
-        button(inv,32,Material.REPEATER,"§7§lRELOAD","§7Reload Admin configuration","§eClick §8» §fReload");
-        button(inv,34,Material.COMPARATOR,"§b§lANALYTICS","§7Server health plus real Core duel/player/kit metrics","§eClick §8» §fView");
-        button(inv,49,Material.BARRIER,"§c§lCLOSE","§7Close administration");
-        p.openInventory(inv);
+        List<DialogBody> body = List.of(
+            DialogBody.plainMessage(Component.text("VOIDFLAME ADMINISTRATION", NamedTextColor.AQUA), 300),
+            DialogBody.plainMessage(Component.text("Administration tools for authorized Java staff.", NamedTextColor.GRAY), 300),
+            DialogBody.plainMessage(Component.text("Choose an area. Each action performs its own permission check.", NamedTextColor.WHITE), 300)
+        );
+        List<ActionButton> actions = new java.util.ArrayList<>();
+        actions.add(adminButton("Practice", "Duels, kits, arenas, queues and FFA.", "/vfadmin practice", NamedTextColor.AQUA));
+        actions.add(adminButton("Management", "Players, menus, settings and punishments.", "/vfadmin management", NamedTextColor.BLUE));
+        actions.add(adminButton("Server", "Worlds, time, weather and server controls.", "/vfadmin server", NamedTextColor.GREEN));
+        actions.add(adminButton("Security", "AntiBot protection and lockdown.", "/vfadmin security", NamedTextColor.RED));
+        actions.add(adminButton("Data & Backups", "Core database status and backup/recovery.", "/vfadmin data", NamedTextColor.GOLD));
+        actions.add(adminButton("Staff Tools", "Open the staff tools screen.", "/staff", NamedTextColor.AQUA));
+        actions.add(adminButton("Analytics", "View server health and player/match metrics.", "/vfadmin analytics", NamedTextColor.BLUE));
+        actions.add(adminButton("Reload Admin Config", "Reload this plugin configuration.", "/vfadmin reload", NamedTextColor.GRAY));
+        actions.add(adminButton("Return to Spawn", "Close administration and return to spawn.", "/spawn", NamedTextColor.WHITE));
+        Dialog dialog = Dialog.create(builder -> builder.empty()
+            .base(DialogBase.builder(Component.text("Staff", NamedTextColor.WHITE))
+                .externalTitle(Component.text("Staff", NamedTextColor.AQUA))
+                .canCloseWithEscape(true)
+                .body(body)
+                .build())
+            .type(DialogType.multiAction(actions).columns(2).build()));
+        p.showDialog(dialog);
+    }
+
+    private ActionButton adminButton(String label, String tooltip, String command, NamedTextColor color) {
+        return ActionButton.create(Component.text(label, color), Component.text(tooltip, NamedTextColor.GRAY),
+            180, DialogAction.commandTemplate(command));
+    }
+
+    public void openSection(Player p, String section) {
+        if (!AdminAccess.hasAdminAccess(p)) { deny(p); return; }
+        switch (section.toLowerCase(java.util.Locale.ROOT)) {
+            case "main" -> open(p);
+            case "practice" -> openPractice(p);
+            case "management" -> openManagement(p);
+            case "server" -> openServer(p);
+            case "security" -> openSecurity(p);
+            case "data" -> openData(p);
+            case "analytics" -> new AdvancedAdminGui(plugin).openAnalytics(p);
+            case "staff" -> plugin.staffGui().openMain(p);
+            default -> open(p);
+        }
     }
 
     private void openPractice(Player p) {
