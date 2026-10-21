@@ -115,6 +115,7 @@ public final class StaffGui implements Listener {
         if(!(e.getWhoClicked() instanceof Player p))return;
         if(!(e.getView().getTopInventory().getHolder() instanceof Holder h))return;
         e.setCancelled(true);
+        if(!AdminAccess.hasStaffAccess(p)){msg(p,"no-permission");p.closeInventory();return;}
         if(e.getClickedInventory()!=e.getView().getTopInventory()) return;
         int s=e.getRawSlot();
         switch(h.type){
