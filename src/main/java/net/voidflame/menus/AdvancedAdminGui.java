@@ -181,7 +181,7 @@ public final class AdvancedAdminGui implements Listener {
     }
 
     private void renderAnalytics(Player p, Analytics a) {
-        if (!AdminAccess.hasAdminAccess(p)) { msg(p,"no-permission"); return; }
+        if (!AdminAccess.hasAdminAccess(p)) { p.sendMessage(color("&cYou do not have permission.")); return; }
         List<DialogBody> body = List.of(
             DialogBody.plainMessage(Component.text("LIVE SERVER ANALYTICS", NamedTextColor.AQUA), 300),
             DialogBody.plainMessage(Component.text("Player profiles: " + (long)a.players + "  •  Recorded matches: " + (long)a.matches, NamedTextColor.WHITE), 320),
