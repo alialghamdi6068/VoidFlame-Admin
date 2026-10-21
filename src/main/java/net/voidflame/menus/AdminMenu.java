@@ -16,13 +16,13 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.List;
 
 public final class AdminMenu implements Listener {
-    public static final String TITLE = "§8VoidFlame §5• §dAdministration";
+    public static final String TITLE = "§8Staff";
     private final VoidFlameMenusPlugin plugin;
 
     public AdminMenu(VoidFlameMenusPlugin plugin) { this.plugin = plugin; }
 
     public void open(Player p) {
-        if (!p.isOp()) { deny(p); return; }
+        if (!p.hasPermission("voidflame.admin") && !p.hasPermission("voidflame.admin.full")) { deny(p); return; }
         Inventory inv = gui("main", TITLE);
         button(inv,10,Material.DIAMOND_SWORD,"§d§lPRACTICE","§7Duels, kits, arenas, queues and FFA","§eClick §8» §fOpen");
         button(inv,12,Material.NAME_TAG,"§6§lMANAGEMENT","§7Players, menus and server settings","§eClick §8» §fOpen");
