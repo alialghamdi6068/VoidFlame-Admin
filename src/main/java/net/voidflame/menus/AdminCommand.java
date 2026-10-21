@@ -32,7 +32,8 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
         }
 
         plugin.audit(player.getName(), "OPEN_ADMIN_CONSOLE");
-        new AdminMenu(plugin).open(player);
+        if (args.length > 0) new AdminMenu(plugin).openSection(player, args[0]);
+        else new AdminMenu(plugin).open(player);
         return true;
     }
 
