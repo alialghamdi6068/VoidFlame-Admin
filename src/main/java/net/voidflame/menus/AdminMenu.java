@@ -22,7 +22,7 @@ public final class AdminMenu implements Listener {
     public AdminMenu(VoidFlameMenusPlugin plugin) { this.plugin = plugin; }
 
     public void open(Player p) {
-        if (!p.hasPermission("voidflame.admin") && !p.hasPermission("voidflame.admin.full")) { deny(p); return; }
+        if (!AdminAccess.hasAdminAccess(p)) { deny(p); return; }
         Inventory inv = gui("main", TITLE);
         button(inv,10,Material.DIAMOND_SWORD,"§d§lPRACTICE","§7Duels, kits, arenas, queues and FFA","§eClick §8» §fOpen");
         button(inv,12,Material.NAME_TAG,"§6§lMANAGEMENT","§7Players, menus and server settings","§eClick §8» §fOpen");
@@ -89,7 +89,7 @@ public final class AdminMenu implements Listener {
     }
 
     private void route(Player p,String permission,String path) {
-        if(!p.isOp()){deny(p);return;}
+        if(AdminAccess.isBedrock(p) || !(p.hasPermission(permission) || p.hasPermission("voidflame.admin.full"))){deny(p);return;}
         String command=plugin.getConfig().getString(path+".command","");
         if(command==null||command.isBlank()){p.sendMessage(color("&cThis integration is not configured."));return;}
         p.closeInventory(); plugin.audit(p.getName(),"OPEN_INTEGRATION:"+path);
@@ -105,7 +105,7 @@ public final class AdminMenu implements Listener {
                 else if(slot==14)openServer(p);
                 else if(slot==16)new AdvancedAdminGui(plugin).openSecurity(p);
                 else if(slot==28)openData(p);
-                else if(slot==30)new StaffGui(plugin).openMain(p);
+                else if(slot==30)plugin.staffGui().openMain(p);
                 else if(slot==32){plugin.reloadConfig();plugin.audit(p.getName(),"RELOAD_ADMIN_CONFIG");p.sendMessage(color(plugin.getConfig().getString("messages.reload","&aReloaded.")));open(p);}
                 else if(slot==34)new AdvancedAdminGui(plugin).openAnalytics(p);
             }
@@ -124,7 +124,7 @@ public final class AdminMenu implements Listener {
                 else if(slot==16)new AdvancedAdminGui(plugin).openPunishments(p);
             }
             case "server" -> {
-                StaffGui staff=new StaffGui(plugin);
+                StaffGui staff=plugin.staffGui();
                 if(slot==10)staff.openWorldsFromAdmin(p);
                 else if(slot==11)staff.openTimeFromAdmin(p);
                 else if(slot==12)staff.openServerFromAdmin(p);
@@ -160,6 +160,7 @@ public final class AdminMenu implements Listener {
         if(!(e.getWhoClicked() instanceof Player p))return;
         if(!(e.getView().getTopInventory().getHolder() instanceof Holder h))return;
         e.setCancelled(true);
+        if(!AdminAccess.hasAdminAccess(p)){deny(p);p.closeInventory();return;}
         if(e.getClickedInventory()!=e.getView().getTopInventory())return;
         if(h.type.equals("restore-confirm"))confirmClick(p,e.getRawSlot());else click(p,h.type,e.getRawSlot());
     }
