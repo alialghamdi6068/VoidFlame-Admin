@@ -75,7 +75,7 @@ settings:
 # external/native plugins.
 #
 # Current VoidFlame integrations:
-# - ZonePractice Pro
+# - VoidFlame-Duels
 # - VoidFlame-Core
 # - VoidFlame-Security
 #
@@ -85,19 +85,19 @@ integrations:
 
   # Practice / Duels controls
   duels:
-    command: "setup"
+    command: "duelsadmin"
 
   # Kit editor
   kits:
-    command: "editor"
+    command: "duelsadmin"
 
   # Arena management
   arenas:
-    command: "arena"
+    command: "duelsadmin"
 
   # Queue management
   queues:
-    command: "practice"
+    command: "duelsadmin"
 
   # FFA management
   ffa:
@@ -105,7 +105,7 @@ integrations:
 
   # Coin/reward shop
   rewards:
-    command: "coinshop"
+    command: "duelsadmin"
 
   # General practice/menu controls
   menus:
@@ -121,7 +121,7 @@ integrations:
 
   # Staff/player administration
   players:
-    command: "staffgui"
+    command: "staff"
 
   # VoidFlame-Core world management
   worlds:
