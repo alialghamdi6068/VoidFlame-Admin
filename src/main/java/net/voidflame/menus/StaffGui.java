@@ -111,7 +111,7 @@ public final class StaffGui implements Listener {
         actions.add(staffButton("Server Manager", "Open server controls and whitelist.", "/staffgui server", NamedTextColor.RED));
         actions.add(staffButton("World Manager", "Manage worlds through VoidFlame-Core.", "/staffgui world", NamedTextColor.GREEN));
         actions.add(staffButton("Server Flags", "Configure PvP, block placement and mob spawning.", "/staffgui flags", NamedTextColor.BLUE));
-        actions.add(staffButton("Close", "Close this staff screen.", "/dialog close", NamedTextColor.GRAY));
+        actions.add(staffButton("Return to Spawn", "Close staff tools and return to spawn.", "/spawn", NamedTextColor.GRAY));
         Dialog dialog = Dialog.create(builder -> builder.empty()
             .base(DialogBase.builder(Component.text("Staff", NamedTextColor.WHITE))
                 .externalTitle(Component.text("Staff", NamedTextColor.AQUA))
