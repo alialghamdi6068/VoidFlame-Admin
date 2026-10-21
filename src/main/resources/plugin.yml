@@ -81,6 +81,14 @@ permissions:
   voidflame.staff:
     description: Staff control access.
     default: op
+    children:
+      voidflame.staff.basic: true
+      voidflame.staff.manage: true
+      voidflame.staff.moderate: true
+      voidflame.staff.players: true
+      voidflame.staff.server: true
+      voidflame.staff.world: true
+      voidflame.staff.admin: true
   voidflame.staff.basic:
     description: Basic staff player tools.
     default: false
