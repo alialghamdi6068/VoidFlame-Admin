@@ -83,7 +83,8 @@ public final class StaffGui implements Listener {
     private void put(Inventory i,int slot,Material m,String name,String... lore){if(slot<i.getSize())i.setItem(slot,item(m,name,lore));}
 
     public void openMain(Player p) {
-        Inventory i=gui("main",6,"&8VoidFlame &5Staff Control");
+        if (!AdminAccess.hasStaffAccess(p)) { msg(p,"no-permission"); return; }
+        Inventory i=gui("main",6,"&8Staff");
         put(i,10,Material.GOLDEN_APPLE,"&6Heal Me","Restore health, remove fire, refill hunger.");
         put(i,11,Material.COMMAND_BLOCK,"&bGamemode","Survival / Creative / Adventure / Spectator.");
         put(i,12,Material.NETHERITE_CHESTPLATE,"&5Protection Mode","Toggle invulnerability.");
@@ -142,7 +143,7 @@ public final class StaffGui implements Listener {
     }
 
     private void main(Player p,int s){
-        if(!(p.hasPermission("voidflame.staff") || p.hasPermission("voidflame.admin") || p.hasPermission("voidflame.admin.full"))){msg(p,"no-permission");return;}
+        if(!AdminAccess.hasStaffAccess(p)){msg(p,"no-permission");return;}
         if(s==28){if(require(p,"voidflame.staff.players"))openPlayers(p);return;}
         if(s==24){if(require(p,"voidflame.staff.basic"))p.openInventory(p.getInventory());return;}
         if(s==25){if(require(p,"voidflame.staff.basic"))p.openWorkbench(null,true);return;}
