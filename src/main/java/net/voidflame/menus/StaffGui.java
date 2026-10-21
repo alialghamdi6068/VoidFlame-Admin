@@ -1,5 +1,13 @@
 package net.voidflame.menus;
 
+import io.papermc.paper.dialog.Dialog;
+import io.papermc.paper.registry.data.dialog.ActionButton;
+import io.papermc.paper.registry.data.dialog.DialogBase;
+import io.papermc.paper.registry.data.dialog.action.DialogAction;
+import io.papermc.paper.registry.data.dialog.body.DialogBody;
+import io.papermc.paper.registry.data.dialog.type.DialogType;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
 import org.bukkit.command.*;
 import org.bukkit.configuration.ConfigurationSection;
@@ -86,31 +94,55 @@ public final class StaffGui implements Listener {
 
     public void openMain(Player p) {
         if (!AdminAccess.hasStaffAccess(p)) { msg(p,"no-permission"); return; }
-        Inventory i=gui("main",6,"&8Staff");
-        put(i,10,Material.GOLDEN_APPLE,"&6Heal Me","Restore health, remove fire, refill hunger.");
-        put(i,11,Material.COMMAND_BLOCK,"&bGamemode","Survival / Creative / Adventure / Spectator.");
-        put(i,12,Material.NETHERITE_CHESTPLATE,"&5Protection Mode","Toggle invulnerability.");
-        put(i,13,Material.ELYTRA,"&3Fly","Toggle flight.");
-        put(i,14,Material.SUGAR,"&fWalk Speed","Open speed controls.");
-        put(i,15,Material.FEATHER,"&fFly Speed","Open speed controls.");
-        put(i,16,Material.POTION,"&dPotion Effects","Add, modify or clear effects.");
-        put(i,19,Material.ANVIL,"&7Item Repair","Repair inventory and worn armor.");
-        put(i,20,Material.DIAMOND_CHESTPLATE,"&bArmor Creator","Build an enchanted armor set.");
-        put(i,21,Material.LAVA_BUCKET,"&cClear Inventory","Remove all target items.");
-        put(i,22,Material.ARROW,"&eClear Arrows","Remove arrows from body.");
-        put(i,23,Material.EXPERIENCE_BOTTLE,"&aExperience Manager","Add, remove or reset XP.");
-        put(i,24,Material.CHEST,"&bMy EQ","Open your personal inventory.");
-        put(i,25,Material.CRAFTING_TABLE,"&6Workbench","Open a crafting table.");
-        put(i,28,Material.PLAYER_HEAD,"&ePlayer Manager","Select a player and manage stats/inventory.");
-        put(i,29,Material.BARRIER,"&cKick All Players","Kick all players according to staff policy.");
-        put(i,30,Material.CLOCK,"&6Time / Weather","Set and lock server time/weather.");
-        put(i,31,Material.REDSTONE_BLOCK,"&cServer Manager","Stop, reload and whitelist.");
-        put(i,32,Material.GRASS_BLOCK,"&2World Manager","Create, remove and teleport worlds.");
-        put(i,33,Material.PAPER,"&fClear Chat","Clear chat for everyone.");
-        put(i,34,Material.REPEATER,"&9Fast Flags","PvP, block placement, mob spawning.");
-        Player t=target(p);
-        put(i,49,Material.NETHER_STAR,"&5Target: &f"+(t==null?"None":t.getName()),"Open Player Manager to select a target.");
-        p.openInventory(i);
+        Player selected = target(p);
+        List<DialogBody> body = List.of(
+            DialogBody.plainMessage(Component.text("VOIDFLAME STAFF", NamedTextColor.AQUA), 300),
+            DialogBody.plainMessage(Component.text("Choose a staff tool. Actions are checked again by the server.", NamedTextColor.GRAY), 300),
+            DialogBody.plainMessage(Component.text("Selected target: " + (selected == null ? "None" : selected.getName()), NamedTextColor.WHITE), 300)
+        );
+        List<ActionButton> actions = new ArrayList<>();
+        actions.add(staffButton("Player Manager", "Select a player and manage player tools.", "/staffgui players", NamedTextColor.AQUA));
+        actions.add(staffButton("Gamemode", "Open target gamemode controls.", "/staffgui gamemode", NamedTextColor.GREEN));
+        actions.add(staffButton("Movement", "Open walk and flight speed controls.", "/staffgui speed", NamedTextColor.AQUA));
+        actions.add(staffButton("Potion Effects", "Manage target potion effects.", "/staffgui potions", NamedTextColor.BLUE));
+        actions.add(staffButton("Experience", "Manage target experience and levels.", "/staffgui xp", NamedTextColor.GOLD));
+        actions.add(staffButton("Armor Creator", "Apply an armor set to the selected player.", "/staffgui armor", NamedTextColor.GOLD));
+        actions.add(staffButton("Time & Weather", "Configure server time and weather.", "/staffgui time", NamedTextColor.WHITE));
+        actions.add(staffButton("Server Manager", "Open server controls and whitelist.", "/staffgui server", NamedTextColor.RED));
+        actions.add(staffButton("World Manager", "Manage worlds through VoidFlame-Core.", "/staffgui world", NamedTextColor.GREEN));
+        actions.add(staffButton("Server Flags", "Configure PvP, block placement and mob spawning.", "/staffgui flags", NamedTextColor.BLUE));
+        actions.add(staffButton("Close", "Close this staff screen.", "/dialog close", NamedTextColor.GRAY));
+        Dialog dialog = Dialog.create(builder -> builder.empty()
+            .base(DialogBase.builder(Component.text("Staff", NamedTextColor.WHITE))
+                .externalTitle(Component.text("Staff", NamedTextColor.AQUA))
+                .canCloseWithEscape(true)
+                .body(body)
+                .build())
+            .type(DialogType.multiAction(actions).columns(2).build()));
+        p.showDialog(dialog);
+    }
+
+    private ActionButton staffButton(String label, String tooltip, String command, NamedTextColor color) {
+        return ActionButton.create(Component.text(label, color), Component.text(tooltip, NamedTextColor.GRAY),
+            180, DialogAction.commandTemplate(command));
+    }
+
+    public void openSection(Player p, String section) {
+        if (!AdminAccess.hasStaffAccess(p)) { msg(p, "no-permission"); return; }
+        switch (section.toLowerCase(Locale.ROOT)) {
+            case "main" -> openMain(p);
+            case "players" -> openPlayers(p);
+            case "gamemode" -> { if (target(p) == null) openPlayers(p); else openGamemode(p); }
+            case "speed" -> { if (target(p) == null) openPlayers(p); else openSpeed(p); }
+            case "potions" -> { if (target(p) == null) openPlayers(p); else openPotions(p); }
+            case "xp" -> { if (target(p) == null) openPlayers(p); else openXp(p); }
+            case "armor" -> { if (target(p) == null) openPlayers(p); else openArmor(p); }
+            case "server" -> openServer(p);
+            case "world" -> openWorlds(p);
+            case "time" -> openTime(p);
+            case "flags" -> openFlags(p);
+            default -> openMain(p);
+        }
     }
 
     @EventHandler public void click(InventoryClickEvent e) {
