@@ -6,7 +6,7 @@ author: VoidFlame
 website: https://github.com/alialghamdi6068/VoidFlame-Admin
 api-version: '26.2'
 load: POSTWORLD
-softdepend: [VoidFlame-Core, VoidFlame-Duels, VoidFlame-Security, ZonePracticePro]
+softdepend: [VoidFlame-Core, VoidFlame-Duels, VoidFlame-Security]
 
 commands:
   vfadmin:
