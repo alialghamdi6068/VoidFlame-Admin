@@ -1,5 +1,13 @@
 package net.voidflame.menus;
 
+import io.papermc.paper.dialog.Dialog;
+import io.papermc.paper.registry.data.dialog.ActionButton;
+import io.papermc.paper.registry.data.dialog.DialogBase;
+import io.papermc.paper.registry.data.dialog.action.DialogAction;
+import io.papermc.paper.registry.data.dialog.body.DialogBody;
+import io.papermc.paper.registry.data.dialog.type.DialogType;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -173,19 +181,34 @@ public final class AdvancedAdminGui implements Listener {
     }
 
     private void renderAnalytics(Player p, Analytics a) {
-        Inventory inv = gui("analytics", ROOT + "Analytics");
-        button(inv, 10, Material.PLAYER_HEAD, "§b§lPLAYERS", "§7Profiles: §f" + (long)a.players);
-        button(inv, 12, Material.GOLDEN_SWORD, "§d§lDUELS", "§7Recorded matches: §f" + (long)a.matches);
-        button(inv, 14, Material.GOLD_INGOT, "§6§lTOTAL WINS", "§f" + (long)a.wins);
-        button(inv, 16, Material.EXPERIENCE_BOTTLE, "§a§lAVERAGE ELO", "§f" + String.format(Locale.ROOT, "%.1f", a.elo));
-        button(inv, 28, Material.CHEST, "§e§lTOP KIT", "§f" + a.topKit);
-        button(inv, 29, Material.PLAYER_HEAD, "§6§lTOP PLAYER", "§f" + a.topPlayer);
-        button(inv, 30, Material.IRON_SWORD, "§c§lACTIVE DUELS", "§7Live: §f" + countActive());
-        button(inv, 32, Material.HOPPER, "§b§lQUEUE", "§7Queued players: §f" + countQueue());
-        button(inv, 34, Material.NETHER_STAR, "§a§lFFA", "§7Online FFA players: §f" + countFfa());
-        button(inv, 40, Material.COMPARATOR, "§f§lWIN RATE", "§7Global: §f" + String.format(Locale.ROOT, "%.1f%%", a.matches <= 0 ? 0 : a.wins * 100.0 / Math.max(1, a.wins + a.losses)));
-        button(inv, 49, Material.ARROW, "§7§lBACK");
-        p.openInventory(inv);
+        if (!AdminAccess.hasAdminAccess(p)) { msg(p,"no-permission"); return; }
+        List<DialogBody> body = List.of(
+            DialogBody.plainMessage(Component.text("LIVE SERVER ANALYTICS", NamedTextColor.AQUA), 300),
+            DialogBody.plainMessage(Component.text("Player profiles: " + (long)a.players + "  •  Recorded matches: " + (long)a.matches, NamedTextColor.WHITE), 320),
+            DialogBody.plainMessage(Component.text("Total wins: " + (long)a.wins + "  •  Total losses: " + (long)a.losses, NamedTextColor.GREEN), 320),
+            DialogBody.plainMessage(Component.text("Average ELO: " + String.format(Locale.ROOT, "%.1f", a.elo)
+                + "  •  Global win rate: " + String.format(Locale.ROOT, "%.1f%%", a.matches <= 0 ? 0 : a.wins * 100.0 / Math.max(1, a.wins + a.losses)), NamedTextColor.GOLD), 320),
+            DialogBody.plainMessage(Component.text("Top kit: " + a.topKit + "  •  Top player: " + a.topPlayer, NamedTextColor.BLUE), 320),
+            DialogBody.plainMessage(Component.text("Active duels: " + countActive() + "  •  Queued players: " + countQueue()
+                + "  •  FFA players: " + countFfa(), NamedTextColor.GRAY), 320)
+        );
+        List<ActionButton> actions = List.of(
+            analyticsButton("Refresh", "Reload the latest statistics.", "/vfadmin analytics", NamedTextColor.AQUA),
+            analyticsButton("Back to Staff", "Return to the main Staff dialog.", "/vfadmin", NamedTextColor.GRAY)
+        );
+        Dialog dialog = Dialog.create(builder -> builder.empty()
+            .base(DialogBase.builder(Component.text("Staff • Analytics", NamedTextColor.WHITE))
+                .externalTitle(Component.text("Staff", NamedTextColor.AQUA))
+                .canCloseWithEscape(true)
+                .body(body)
+                .build())
+            .type(DialogType.multiAction(actions).columns(2).build()));
+        p.showDialog(dialog);
+    }
+
+    private ActionButton analyticsButton(String label, String tooltip, String command, NamedTextColor color) {
+        return ActionButton.create(Component.text(label, color), Component.text(tooltip, NamedTextColor.GRAY),
+            180, DialogAction.commandTemplate(command));
     }
 
     private long countActive() {
