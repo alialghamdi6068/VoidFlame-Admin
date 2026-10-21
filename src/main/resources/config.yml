@@ -93,7 +93,7 @@ integrations:
 
   # Arena management
   arenas:
-    command: "duelsadmin"
+    command: "duelarena"
 
   # Queue management
   queues:
