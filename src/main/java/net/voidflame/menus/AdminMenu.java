@@ -284,7 +284,7 @@ public final class AdminMenu implements Listener {
     }
 
     private void confirmDataRestore(Player p){
-        Inventory inv=gui("restore-confirm","§8VoidFlame §5• §cConfirm Restore");
+        Inventory inv=gui("restore-confirm","§8VoidFlame §3• §cConfirm Restore");
         button(inv,20,Material.RED_CONCRETE,"§c§lCONFIRM RESTORE","§7Restore the latest Core database backup.","§cThis can replace current database state.");
         button(inv,24,Material.LIME_CONCRETE,"§a§lCANCEL","§7Return without restoring.");
         p.openInventory(inv);
