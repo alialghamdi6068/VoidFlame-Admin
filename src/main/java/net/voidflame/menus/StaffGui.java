@@ -111,6 +111,16 @@ public final class StaffGui implements Listener {
         actions.add(staffButton("Time & Weather", "Configure server time and weather.", "/staffgui time", NamedTextColor.WHITE));
         actions.add(staffButton("Server Manager", "Open server controls and whitelist.", "/staffgui server", NamedTextColor.RED));
         actions.add(staffButton("World Manager", "Manage worlds through VoidFlame-Core.", "/staffgui world", NamedTextColor.GREEN));
+        actions.add(staffButton("Heal Target", "Restore health, hunger and remove fire.", "/staffgui heal", NamedTextColor.GREEN));
+        actions.add(staffButton("Protection Mode", "Toggle target invulnerability.", "/staffgui protection", NamedTextColor.BLUE));
+        actions.add(staffButton("Toggle Flight", "Toggle flight for the selected target.", "/staffgui fly", NamedTextColor.AQUA));
+        actions.add(staffButton("Repair Items", "Repair target inventory and armor.", "/staffgui repair", NamedTextColor.GOLD));
+        actions.add(staffButton("Clear Inventory", "Clear the selected target inventory.", "/staffgui clearinventory", NamedTextColor.RED));
+        actions.add(staffButton("Clear Arrows", "Remove arrows embedded in the target.", "/staffgui cleararrows", NamedTextColor.WHITE));
+        actions.add(staffButton("Kick All", "Open the existing confirmation before kicking players.", "/staffgui kickall", NamedTextColor.RED));
+        actions.add(staffButton("My Inventory", "Open your own inventory.", "/staffgui myinventory", NamedTextColor.AQUA));
+        actions.add(staffButton("Workbench", "Open the workbench.", "/staffgui workbench", NamedTextColor.GOLD));
+        actions.add(staffButton("Clear Chat", "Clear public chat.", "/staffgui clearchat", NamedTextColor.GRAY));
         actions.add(staffButton("Server Flags", "Configure PvP, block placement and mob spawning.", "/staffgui flags", NamedTextColor.BLUE));
         actions.add(staffButton("Return to Spawn", "Close staff tools and return to spawn.", "/spawn", NamedTextColor.GRAY));
         Dialog dialog = Dialog.create(builder -> builder.empty()
@@ -131,7 +141,9 @@ public final class StaffGui implements Listener {
     public void openSection(Player p, String section) {
         if (!AdminAccess.hasStaffAccess(p)) { msg(p, "no-permission"); return; }
         String normalized = section.toLowerCase(Locale.ROOT);
-        if (Set.of("gamemode", "speed", "potions", "xp", "armor").contains(normalized) && target(p) == null) {
+        Set<String> targetActions = Set.of("heal", "gamemode", "protection", "fly", "speed", "potions",
+            "repair", "armor", "clearinventory", "cleararrows", "xp");
+        if (targetActions.contains(normalized) && target(p) == null) {
             pendingSection.put(p.getUniqueId(), normalized);
             openPlayers(p);
             return;
@@ -140,15 +152,25 @@ public final class StaffGui implements Listener {
         switch (normalized) {
             case "main" -> openMain(p);
             case "players" -> openPlayers(p);
-            case "gamemode" -> openGamemode(p);
-            case "speed" -> openSpeed(p);
-            case "potions" -> openPotions(p);
-            case "xp" -> openXp(p);
-            case "armor" -> openArmor(p);
-            case "server" -> openServer(p);
-            case "world" -> openWorlds(p);
-            case "time" -> openTime(p);
-            case "flags" -> openFlags(p);
+            case "heal" -> main(p, 10);
+            case "gamemode" -> main(p, 11);
+            case "protection" -> main(p, 12);
+            case "fly" -> main(p, 13);
+            case "speed" -> main(p, 14);
+            case "potions" -> main(p, 16);
+            case "repair" -> main(p, 19);
+            case "armor" -> main(p, 20);
+            case "clearinventory" -> main(p, 21);
+            case "cleararrows" -> main(p, 22);
+            case "xp" -> main(p, 23);
+            case "myinventory" -> main(p, 24);
+            case "workbench" -> main(p, 25);
+            case "kickall" -> main(p, 29);
+            case "time" -> main(p, 30);
+            case "server" -> main(p, 31);
+            case "world" -> main(p, 32);
+            case "clearchat" -> main(p, 33);
+            case "flags" -> main(p, 34);
             default -> openMain(p);
         }
     }
