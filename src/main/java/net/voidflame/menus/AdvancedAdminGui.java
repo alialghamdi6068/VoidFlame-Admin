@@ -202,6 +202,7 @@ public final class AdvancedAdminGui implements Listener {
         if (!(e.getWhoClicked() instanceof Player p)) return;
         if (!(e.getView().getTopInventory().getHolder() instanceof Holder h)) return;
         e.setCancelled(true);
+        if (!AdminAccess.hasAdminAccess(p)) { p.sendMessage(color("&cJava staff only.")); p.closeInventory(); return; }
         if (e.getClickedInventory() != e.getView().getTopInventory()) return;
         int s=e.getRawSlot();
         if (s==49) { new AdminMenu(plugin).open(p); return; }
