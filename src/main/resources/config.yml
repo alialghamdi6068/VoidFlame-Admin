@@ -101,7 +101,7 @@ integrations:
 
   # FFA management
   ffa:
-    command: "practice"
+    command: "duelsadmin"
 
   # Coin/reward shop
   rewards:
@@ -109,7 +109,7 @@ integrations:
 
   # General practice/menu controls
   menus:
-    command: "practice"
+    command: "duelsadmin"
 
   # VoidFlame-Security controls
   security:
@@ -133,7 +133,7 @@ integrations:
 
   # Staff control panel
   staff:
-    command: "staffgui"
+    command: "staff"
 
 
 # ------------------------------------------------
