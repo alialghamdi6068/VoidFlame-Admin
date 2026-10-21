@@ -12,16 +12,16 @@
 # ------------------------------------------------
 gui:
   # Main administration menu title.
-  title: "&8VoidFlame &5• &dAdministration"
+  title: "&8Staff"
 
   # Inventory size: 6 rows = 54 slots.
   rows: 6
 
   # Decorative filler item used for empty GUI slots.
-  filler: "BLACK_STAINED_GLASS_PANE"
+  filler: "GRAY_STAINED_GLASS_PANE"
 
   # Accent item used by the GUI layout.
-  accent: "PURPLE_STAINED_GLASS_PANE"
+  accent: "CYAN_STAINED_GLASS_PANE"
 
   # Maximum number of entries shown on one page.
   page-size: 45
