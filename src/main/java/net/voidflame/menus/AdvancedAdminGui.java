@@ -266,7 +266,7 @@ public final class AdvancedAdminGui implements Listener {
     }
 
     private List<Player> sortedPlayers(){List<Player> p=new ArrayList<>(Bukkit.getOnlinePlayers());p.sort(Comparator.comparing(Player::getName,String.CASE_INSENSITIVE_ORDER));return p;}
-    private Inventory gui(String type,String title){Inventory i=Bukkit.createInventory(new Holder(type),54,color(title));ItemStack f=item(Material.BLACK_STAINED_GLASS_PANE," ");for(int n=0;n<54;n++)i.setItem(n,f.clone());for(int n=0;n<9;n++)i.setItem(n,item(Material.PURPLE_STAINED_GLASS_PANE," "));for(int n=45;n<54;n++)i.setItem(n,item(Material.PURPLE_STAINED_GLASS_PANE," "));return i;}
+    private Inventory gui(String type,String title){return Bukkit.createInventory(new Holder(type),54,color(title));}
     private void button(Inventory i,int s,Material m,String n,String... l){if(s<i.getSize())i.setItem(s,item(m,n,l));}
     private ItemStack item(Material m,String n,String... l){ItemStack i=new ItemStack(m);ItemMeta md=i.getItemMeta();if(md!=null){md.setDisplayName(color(n));md.setLore(Arrays.stream(l).map(this::color).toList());i.setItemMeta(md);}return i;}
     private String color(String s){return ChatColor.translateAlternateColorCodes('&',s==null?"":s);}
