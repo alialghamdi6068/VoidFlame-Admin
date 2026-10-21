@@ -12,17 +12,30 @@ final class AdminAccess {
 
     static boolean isBedrock(Player player) {
         Plugin floodgate = Bukkit.getPluginManager().getPlugin("floodgate");
-        if (floodgate == null || !floodgate.isEnabled()) return false;
-        try {
-            Class<?> apiClass = Class.forName("org.geysermc.floodgate.api.FloodgateApi");
-            Object api = apiClass.getMethod("getInstance").invoke(null);
-            Method check = apiClass.getMethod("isFloodgatePlayer", UUID.class);
-            return Boolean.TRUE.equals(check.invoke(api, player.getUniqueId()));
-        } catch (ReflectiveOperationException | LinkageError ex) {
-            // Fail closed: if Floodgate is installed but its identity API cannot be checked,
-            // do not grant administrative access based on an uncertain client identity.
-            return true;
+        if (floodgate != null && floodgate.isEnabled()) {
+            try {
+                Class<?> apiClass = Class.forName("org.geysermc.floodgate.api.FloodgateApi");
+                Object api = apiClass.getMethod("getInstance").invoke(null);
+                Method check = apiClass.getMethod("isFloodgatePlayer", UUID.class);
+                return Boolean.TRUE.equals(check.invoke(api, player.getUniqueId()));
+            } catch (ReflectiveOperationException | LinkageError ex) {
+                return true;
+            }
         }
+
+        Plugin geyser = Bukkit.getPluginManager().getPlugin("Geyser-Spigot");
+        if (geyser == null) geyser = Bukkit.getPluginManager().getPlugin("Geyser");
+        if (geyser != null && geyser.isEnabled()) {
+            try {
+                Class<?> apiClass = Class.forName("org.geysermc.geyser.api.GeyserApi");
+                Object api = apiClass.getMethod("api").invoke(null);
+                Method check = apiClass.getMethod("isBedrockPlayer", UUID.class);
+                return Boolean.TRUE.equals(check.invoke(api, player.getUniqueId()));
+            } catch (ReflectiveOperationException | LinkageError ex) {
+                return true;
+            }
+        }
+        return false;
     }
 
     static boolean hasAdminAccess(Player player) {
