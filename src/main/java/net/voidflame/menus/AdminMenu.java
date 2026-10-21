@@ -61,6 +61,21 @@ public final class AdminMenu implements Listener {
             180, DialogAction.commandTemplate(command));
     }
 
+    private void showAdminDialog(Player p, String title, String description, List<ActionButton> actions) {
+        if (!AdminAccess.hasAdminAccess(p)) { deny(p); return; }
+        Dialog dialog = Dialog.create(builder -> builder.empty()
+            .base(DialogBase.builder(Component.text("Staff • " + title, NamedTextColor.WHITE))
+                .externalTitle(Component.text("Staff", NamedTextColor.AQUA))
+                .canCloseWithEscape(true)
+                .body(List.of(
+                    DialogBody.plainMessage(Component.text("VOIDFLAME ADMINISTRATION", NamedTextColor.AQUA), 300),
+                    DialogBody.plainMessage(Component.text(description, NamedTextColor.GRAY), 300)
+                ))
+                .build())
+            .type(DialogType.multiAction(actions).columns(2).build()));
+        p.showDialog(dialog);
+    }
+
     public void openSection(Player p, String section) {
         if (!AdminAccess.hasAdminAccess(p)) { deny(p); return; }
         switch (section.toLowerCase(java.util.Locale.ROOT)) {
@@ -72,37 +87,57 @@ public final class AdminMenu implements Listener {
             case "data" -> openData(p);
             case "analytics" -> new AdvancedAdminGui(plugin).openAnalytics(p);
             case "staff" -> plugin.staffGui().openMain(p);
+            case "duels" -> route(p, "voidflame.admin.duels", "integrations.duels");
+            case "kits" -> route(p, "voidflame.admin.kits", "integrations.kits");
+            case "arenas" -> route(p, "voidflame.admin.arenas", "integrations.arenas");
+            case "queues" -> route(p, "voidflame.admin.queues", "integrations.queues");
+            case "ffa" -> route(p, "voidflame.admin.ffa", "integrations.ffa");
+            case "rewards" -> route(p, "voidflame.admin.rewards", "integrations.rewards");
+            case "players" -> new AdvancedAdminGui(plugin).openPlayerManager(p);
+            case "menus" -> route(p, "voidflame.admin.menus", "integrations.menus");
+            case "settings" -> route(p, "voidflame.admin.settings", "integrations.settings");
+            case "punishments" -> new AdvancedAdminGui(plugin).openPunishments(p);
+            case "worlds" -> plugin.staffGui().openWorldsFromAdmin(p);
+            case "timeweather" -> plugin.staffGui().openTimeFromAdmin(p);
+            case "servermanager" -> plugin.staffGui().openServerFromAdmin(p);
+            case "flags" -> plugin.staffGui().openFlagsFromAdmin(p);
             default -> open(p);
         }
     }
 
     private void openPractice(Player p) {
-        Inventory inv=gui("practice","§8VoidFlame §5• §dPractice");
-        button(inv,10,Material.DIAMOND_SWORD,"§d§lDUELS","§7Open duel administration");
-        button(inv,11,Material.CHEST,"§d§lKITS","§7Open kit administration/editor");
-        button(inv,12,Material.NETHERITE_SWORD,"§d§lARENAS","§7Open arena administration");
-        button(inv,13,Material.NETHER_STAR,"§b§lQUEUES","§7Open queue/matchmaking controls");
-        button(inv,14,Material.ENDER_PEARL,"§a§lFFA","§7Open FFA controls");
-        button(inv,15,Material.GOLD_INGOT,"§e§lREWARDS","§7Open coins/rewards controls");
-        back(inv,49); p.openInventory(inv);
+        showAdminDialog(p, "Practice", "Duels, kits, arenas, queues, FFA and rewards.",
+            List.of(
+                adminButton("Duels", "Open duel administration.", "/vfadmin duels", NamedTextColor.AQUA),
+                adminButton("Kits", "Open kit administration.", "/vfadmin kits", NamedTextColor.BLUE),
+                adminButton("Arenas", "Open arena administration.", "/vfadmin arenas", NamedTextColor.GOLD),
+                adminButton("Queues", "Open queue and matchmaking controls.", "/vfadmin queues", NamedTextColor.GREEN),
+                adminButton("FFA", "Open FFA controls.", "/vfadmin ffa", NamedTextColor.RED),
+                adminButton("Rewards", "Open coin and reward controls.", "/vfadmin rewards", NamedTextColor.GOLD),
+                adminButton("Back", "Return to Staff administration.", "/vfadmin", NamedTextColor.GRAY)
+            ));
     }
 
     private void openManagement(Player p) {
-        Inventory inv=gui("management","§8VoidFlame §5• §dManagement");
-        button(inv,10,Material.PLAYER_HEAD,"§f§lPLAYERS","§7Open Staff player manager");
-        button(inv,12,Material.COMPASS,"§5§lMENUS","§7Open menu/practice configuration");
-        button(inv,14,Material.COMPARATOR,"§b§lSETTINGS","§7Open server/practice settings");
-        button(inv,16,Material.BOOK,"§c§lPUNISHMENTS","§7Ban, mute, warn, kick and history","§eClick §8» §fOpen GUI");
-        back(inv,49); p.openInventory(inv);
+        showAdminDialog(p, "Management", "Players, menus, settings and punishments.",
+            List.of(
+                adminButton("Players", "Open the staff player manager.", "/vfadmin players", NamedTextColor.AQUA),
+                adminButton("Menus", "Open menu and practice configuration.", "/vfadmin menus", NamedTextColor.BLUE),
+                adminButton("Settings", "Open configured server/practice settings.", "/vfadmin settings", NamedTextColor.GREEN),
+                adminButton("Punishments", "Open bans, mutes, warnings and history.", "/vfadmin punishments", NamedTextColor.RED),
+                adminButton("Back", "Return to Staff administration.", "/vfadmin", NamedTextColor.GRAY)
+            ));
     }
 
     private void openServer(Player p) {
-        Inventory inv=gui("server","§8VoidFlame §5• §dServer");
-        button(inv,10,Material.GRASS_BLOCK,"§2§lWORLDS","§7Manage worlds through VoidFlame-Core");
-        button(inv,11,Material.CLOCK,"§6§lTIME & WEATHER","§7Set and lock server time/weather");
-        button(inv,12,Material.REDSTONE_BLOCK,"§c§lSERVER MANAGER","§7Whitelist and controlled server actions");
-        button(inv,13,Material.IRON_SWORD,"§c§lFLAGS","§7PvP, block placement and mob spawning");
-        back(inv,49); p.openInventory(inv);
+        showAdminDialog(p, "Server", "Worlds, time, weather and server controls.",
+            List.of(
+                adminButton("Worlds", "Manage worlds through VoidFlame-Core.", "/vfadmin worlds", NamedTextColor.GREEN),
+                adminButton("Time & Weather", "Set and lock server time and weather.", "/vfadmin timeweather", NamedTextColor.GOLD),
+                adminButton("Server Manager", "Open whitelist and server controls.", "/vfadmin servermanager", NamedTextColor.RED),
+                adminButton("Flags", "Configure PvP, block placement and mob spawning.", "/vfadmin flags", NamedTextColor.BLUE),
+                adminButton("Back", "Return to Staff administration.", "/vfadmin", NamedTextColor.GRAY)
+            ));
     }
 
     private void openSecurity(Player p) {
