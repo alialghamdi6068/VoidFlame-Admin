@@ -30,12 +30,30 @@ permissions:
   voidflame.admin:
     description: Open the central VoidFlame administration console and status tools.
     default: op
+    children:
+      voidflame.admin.duels: true
+      voidflame.admin.kits: true
+      voidflame.admin.arenas: true
+      voidflame.admin.queues: true
+      voidflame.admin.ffa: true
+      voidflame.admin.rewards: true
+      voidflame.admin.ranks: true
+      voidflame.admin.players: true
+      voidflame.admin.menus: true
+      voidflame.admin.logs: true
+      voidflame.admin.settings: true
+      voidflame.admin.security: true
+      voidflame.admin.database: true
+      voidflame.admin.punishments: true
+      voidflame.admin.metrics: true
   voidflame.admin.full:
     description: Full unrestricted access to the central administration console.
     default: false
   voidflame.admin.duels:
     description: Manage the installed duels/practice system.
     default: false
+    children:
+      voidflame.duels.admin: true
   voidflame.admin.kits:
     description: Manage the installed kit system.
     default: false
