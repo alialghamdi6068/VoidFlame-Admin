@@ -170,12 +170,15 @@ public final class AdminMenu implements Listener {
     private Inventory gui(String type,String title){
         int rows=Math.max(1,Math.min(6,plugin.getConfig().getInt("gui.rows",6)));
         Inventory inv=Bukkit.createInventory(new Holder(type),rows*9,color(title));
-        Material filler=Material.matchMaterial(plugin.getConfig().getString("gui.filler","BLACK_STAINED_GLASS_PANE"));
-        Material accent=Material.matchMaterial(plugin.getConfig().getString("gui.accent","PURPLE_STAINED_GLASS_PANE"));
-        if(filler==null)filler=Material.BLACK_STAINED_GLASS_PANE;if(accent==null)accent=Material.PURPLE_STAINED_GLASS_PANE;
-        for(int i=0;i<inv.getSize();i++)inv.setItem(i,item(filler," "));
-        for(int i=0;i<9;i++)inv.setItem(i,item(accent," "));
-        for(int i=inv.getSize()-9;i<inv.getSize();i++)inv.setItem(i,item(accent," "));
+        Material filler=Material.matchMaterial(plugin.getConfig().getString("gui.filler","AIR"));
+        Material accent=Material.matchMaterial(plugin.getConfig().getString("gui.accent","AIR"));
+        // Keep empty slots empty by default; decorative panes are opt-in in config.
+        if(filler!=null && filler!=Material.AIR)
+            for(int i=0;i<inv.getSize();i++)inv.setItem(i,item(filler," "));
+        if(accent!=null && accent!=Material.AIR) {
+            for(int i=0;i<9;i++)inv.setItem(i,item(accent," "));
+            for(int i=inv.getSize()-9;i<inv.getSize();i++)inv.setItem(i,item(accent," "));
+        }
         return inv;
     }
     private void button(Inventory inv,int slot,Material material,String name,String... lore){if(slot<inv.getSize())inv.setItem(slot,item(material,name,lore));}
