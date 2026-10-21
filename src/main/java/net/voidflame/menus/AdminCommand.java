@@ -14,7 +14,7 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) return true;
-        if (!player.isOp()) {
+        if (!player.hasPermission("voidflame.admin") && !player.hasPermission("voidflame.admin.full")) {
             player.sendMessage(ChatColor.RED + "You do not have permission.");
             return true;
         }
