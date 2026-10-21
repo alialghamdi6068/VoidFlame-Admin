@@ -68,10 +68,12 @@ public final class StaffGui implements Listener {
 
     private Inventory gui(String type,int rows,String title) {
         Inventory i=Bukkit.createInventory(new Holder(type),rows*9,color(title));
-        Material filler=Material.matchMaterial(plugin.getConfig().getString("gui.filler","BLACK_STAINED_GLASS_PANE"));
-        if(filler==null) filler=Material.BLACK_STAINED_GLASS_PANE;
-        ItemStack pane=item(filler," ");
-        for(int n=0;n<i.getSize();n++) i.setItem(n,pane);
+        Material filler=Material.matchMaterial(plugin.getConfig().getString("gui.filler","AIR"));
+        // AIR leaves unused slots genuinely empty; only fill when explicitly configured.
+        if(filler!=null && filler!=Material.AIR) {
+            ItemStack pane=item(filler," ");
+            for(int n=0;n<i.getSize();n++) i.setItem(n,pane);
+        }
         return i;
     }
 
