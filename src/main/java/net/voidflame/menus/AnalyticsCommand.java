@@ -20,7 +20,7 @@ public final class AnalyticsCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender.isOp())) {
+        if (!(sender instanceof org.bukkit.entity.Player player) || !AdminAccess.hasAdminAccess(player)) {
             sender.sendMessage(ChatColor.RED + "You do not have permission.");
             return true;
         }
