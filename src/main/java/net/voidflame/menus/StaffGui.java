@@ -32,6 +32,7 @@ public final class StaffGui implements Listener {
     private final VoidFlameMenusPlugin plugin;
     public StaffGui(VoidFlameMenusPlugin plugin) { this.plugin = plugin; }
     private final Map<UUID, UUID> targets = new HashMap<>();
+    private final Map<UUID, String> pendingSection = new HashMap<>();
     private final Set<UUID> frozen = new HashSet<>();
     private final Map<UUID, Long> confirmations = new HashMap<>();
     private final Map<UUID, Action> pending = new HashMap<>();
@@ -51,7 +52,7 @@ public final class StaffGui implements Listener {
     }
 
     public void onDisable() {
-        targets.clear(); confirmations.clear(); pending.clear();
+        targets.clear(); pendingSection.clear(); confirmations.clear(); pending.clear();
         saveState();
     }
 
@@ -129,14 +130,21 @@ public final class StaffGui implements Listener {
 
     public void openSection(Player p, String section) {
         if (!AdminAccess.hasStaffAccess(p)) { msg(p, "no-permission"); return; }
-        switch (section.toLowerCase(Locale.ROOT)) {
+        String normalized = section.toLowerCase(Locale.ROOT);
+        if (Set.of("gamemode", "speed", "potions", "xp", "armor").contains(normalized) && target(p) == null) {
+            pendingSection.put(p.getUniqueId(), normalized);
+            openPlayers(p);
+            return;
+        }
+        pendingSection.remove(p.getUniqueId());
+        switch (normalized) {
             case "main" -> openMain(p);
             case "players" -> openPlayers(p);
-            case "gamemode" -> { if (target(p) == null) openPlayers(p); else openGamemode(p); }
-            case "speed" -> { if (target(p) == null) openPlayers(p); else openSpeed(p); }
-            case "potions" -> { if (target(p) == null) openPlayers(p); else openPotions(p); }
-            case "xp" -> { if (target(p) == null) openPlayers(p); else openXp(p); }
-            case "armor" -> { if (target(p) == null) openPlayers(p); else openArmor(p); }
+            case "gamemode" -> openGamemode(p);
+            case "speed" -> openSpeed(p);
+            case "potions" -> openPotions(p);
+            case "xp" -> openXp(p);
+            case "armor" -> openArmor(p);
             case "server" -> openServer(p);
             case "world" -> openWorlds(p);
             case "time" -> openTime(p);
@@ -224,7 +232,12 @@ public final class StaffGui implements Listener {
         if(s==49){openMain(p);return;}ItemStack x=p.getOpenInventory().getTopInventory().getItem(s);
         if(x==null||x.getType()!=Material.PLAYER_HEAD||x.getItemMeta()==null)return;
         String n=ChatColor.stripColor(x.getItemMeta().getDisplayName());Player t=Bukkit.getPlayerExact(n);
-        if(t!=null){targets.put(p.getUniqueId(),t.getUniqueId());openPlayerManager(p);}
+        if(t!=null){
+            targets.put(p.getUniqueId(),t.getUniqueId());
+            String requested = pendingSection.remove(p.getUniqueId());
+            if (requested != null) openSection(p, requested);
+            else openPlayerManager(p);
+        }
     }
 
     private void openPlayerManager(Player p){
