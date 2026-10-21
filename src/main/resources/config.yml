@@ -17,11 +17,11 @@ gui:
   # Inventory size: 6 rows = 54 slots.
   rows: 6
 
-  # Decorative filler item used for empty GUI slots.
-  filler: "GRAY_STAINED_GLASS_PANE"
+  # Use AIR for clean, empty slots. Set a pane material only if decoration is explicitly desired.
+  filler: "AIR"
 
-  # Accent item used by the GUI layout.
-  accent: "CYAN_STAINED_GLASS_PANE"
+  # Optional top/bottom border item. AIR disables the border.
+  accent: "AIR"
 
   # Maximum number of entries shown on one page.
   page-size: 45
