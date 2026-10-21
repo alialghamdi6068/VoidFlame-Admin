@@ -19,9 +19,7 @@ public final class StaffCommand implements CommandExecutor {
             sender.sendMessage("This command can only be used in-game.");
             return true;
         }
-        if (!player.hasPermission("voidflame.staff")
-                && !player.hasPermission("voidflame.admin")
-                && !player.hasPermission("voidflame.admin.full")) {
+        if (!AdminAccess.hasStaffAccess(player)) {
             player.sendMessage(ChatColor.RED + "You do not have permission.");
             return true;
         }
