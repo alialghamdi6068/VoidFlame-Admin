@@ -33,6 +33,8 @@ public final class VoidFlameMenusPlugin extends JavaPlugin {
 
     PunishmentService punishments() { return punishments; }
 
+    StaffGui staffGui() { return staffGui; }
+
     void audit(String actor, String action) {
         if (audit != null && getConfig().getBoolean("logging.file.enabled", true)) audit.log(actor, action);
     }
