@@ -62,15 +62,20 @@ public final class AdminMenu implements Listener {
     }
 
     private void showAdminDialog(Player p, String title, String description, List<ActionButton> actions) {
+        showAdminDialog(p, title, description, actions, List.of());
+    }
+
+    private void showAdminDialog(Player p, String title, String description, List<ActionButton> actions, List<DialogBody> extraBody) {
         if (!AdminAccess.hasAdminAccess(p)) { deny(p); return; }
+        List<DialogBody> body = new java.util.ArrayList<>();
+        body.add(DialogBody.plainMessage(Component.text("VOIDFLAME ADMINISTRATION", NamedTextColor.AQUA), 300));
+        body.add(DialogBody.plainMessage(Component.text(description, NamedTextColor.GRAY), 300));
+        body.addAll(extraBody);
         Dialog dialog = Dialog.create(builder -> builder.empty()
             .base(DialogBase.builder(Component.text("Staff • " + title, NamedTextColor.WHITE))
                 .externalTitle(Component.text("Staff", NamedTextColor.AQUA))
                 .canCloseWithEscape(true)
-                .body(List.of(
-                    DialogBody.plainMessage(Component.text("VOIDFLAME ADMINISTRATION", NamedTextColor.AQUA), 300),
-                    DialogBody.plainMessage(Component.text(description, NamedTextColor.GRAY), 300)
-                ))
+                .body(body)
                 .build())
             .type(DialogType.multiAction(actions).columns(2).build()));
         p.showDialog(dialog);
@@ -85,6 +90,29 @@ public final class AdminMenu implements Listener {
             case "server" -> openServer(p);
             case "security" -> openSecurity(p);
             case "data" -> openData(p);
+            case "backup" -> AdminServices.backup().whenComplete((ok, error) -> Bukkit.getScheduler().runTask(plugin, () -> {
+                if (error == null) { plugin.audit(p.getName(), "CORE_BACKUP"); p.sendMessage(color("&aCore database backup created.")); }
+                else p.sendMessage(color("&cBackup failed: &f" + error.getMessage()));
+                openData(p);
+            }));
+            case "restoreconfirm" -> openRestoreConfirmation(p);
+            case "restoreyes" -> restoreLatest(p);
+            case "securitytoggle" -> {
+                if (!AdminAccess.hasAdminAccess(p)) { deny(p); return; }
+                if (AdminServices.security() == null) { p.sendMessage(color("&cVoidFlame-Security is not installed.")); return; }
+                boolean next = !AdminServices.securityBoolean("isProtectionEnabled", false);
+                AdminServices.setSecurity("setProtectionEnabled", next);
+                plugin.audit(p.getName(), "SECURITY_TOGGLE:" + next);
+                openSecurity(p);
+            }
+            case "securitylockdown" -> {
+                if (!AdminAccess.hasAdminAccess(p)) { deny(p); return; }
+                if (AdminServices.security() == null) { p.sendMessage(color("&cVoidFlame-Security is not installed.")); return; }
+                boolean next = !AdminServices.securityBoolean("isLockdown", false);
+                AdminServices.setSecurity("setLockdown", next);
+                plugin.audit(p.getName(), "SECURITY_LOCKDOWN:" + next);
+                openSecurity(p);
+            }
             case "analytics" -> new AdvancedAdminGui(plugin).openAnalytics(p);
             case "staff" -> plugin.staffGui().openMain(p);
             case "duels" -> route(p, "voidflame.admin.duels", "integrations.duels");
@@ -141,26 +169,62 @@ public final class AdminMenu implements Listener {
     }
 
     private void openSecurity(Player p) {
-        Inventory inv=gui("security","§8VoidFlame §5• §dSecurity");
-        boolean enabled=AdminServices.securityBoolean("isProtectionEnabled",false);
-        boolean lockdown=AdminServices.securityBoolean("isLockdown",false);
-        button(inv,11,enabled?Material.LIME_DYE:Material.RED_DYE,enabled?"§a§lANTIBOT: ON":"§c§lANTIBOT: OFF","§7Click to toggle protection");
-        button(inv,13,lockdown?Material.REDSTONE_BLOCK:Material.IRON_BLOCK,lockdown?"§4§lLOCKDOWN: ON":"§7§lLOCKDOWN: OFF","§7Click to toggle emergency admission lock");
-        button(inv,15,Material.SHIELD,"§b§lSECURITY STATUS","§7Level: §f"+AdminServices.securityInt("getProtectionLevel",0),"§7Verifying: §f"+AdminServices.securityInt("getVerifyingCount",0),"§7Whitelist: §f"+AdminServices.securityInt("getWhitelistSize",0));
-        button(inv,17,Material.NAME_TAG,"§e§lWHITELIST","§7Open Security whitelist GUI","§eClick §8» §fOpen Security");
-        back(inv,49); p.openInventory(inv);
+        if (!AdminAccess.hasAdminAccess(p)) { deny(p); return; }
+        boolean enabled = AdminServices.securityBoolean("isProtectionEnabled", false);
+        boolean lockdown = AdminServices.securityBoolean("isLockdown", false);
+        List<DialogBody> body = List.of(
+            DialogBody.plainMessage(Component.text("SECURITY STATUS", NamedTextColor.RED), 300),
+            DialogBody.plainMessage(Component.text("AntiBot: " + (enabled ? "ON" : "OFF")
+                + " • Lockdown: " + (lockdown ? "ON" : "OFF"), enabled ? NamedTextColor.GREEN : NamedTextColor.GOLD), 300),
+            DialogBody.plainMessage(Component.text("Protection level: " + AdminServices.securityInt("getProtectionLevel", 0)
+                + " • Verifying: " + AdminServices.securityInt("getVerifyingCount", 0)
+                + " • Whitelist: " + AdminServices.securityInt("getWhitelistSize", 0), NamedTextColor.GRAY), 300)
+        );
+        showAdminDialog(p, "Security", "AntiBot protection and emergency lockdown.",
+            List.of(
+                adminButton(enabled ? "Disable AntiBot" : "Enable AntiBot", "Toggle AntiBot protection.", "/vfadmin securitytoggle", enabled ? NamedTextColor.RED : NamedTextColor.GREEN),
+                adminButton(lockdown ? "Disable Lockdown" : "Enable Lockdown", "Toggle emergency admission lockdown.", "/vfadmin securitylockdown", lockdown ? NamedTextColor.GREEN : NamedTextColor.RED),
+                adminButton("Security Whitelist", "Open the existing Security whitelist controls.", "/antibot gui", NamedTextColor.AQUA),
+                adminButton("Refresh", "Refresh security status.", "/vfadmin security", NamedTextColor.BLUE),
+                adminButton("Back", "Return to Staff administration.", "/vfadmin", NamedTextColor.GRAY)
+            ), body);
     }
 
     private void openData(Player p) {
-        Inventory inv=gui("data","§8VoidFlame §5• §dData");
-        Object db=AdminServices.coreDatabase();
-        boolean open=db!=null;
-        String path="";
-        if(open) try { path=String.valueOf(db.getClass().getMethod("databasePath").invoke(db)); } catch(Exception ignored){}
-        button(inv,11,open?Material.LIME_DYE:Material.RED_DYE,open?"§a§lCORE DATABASE: ONLINE":"§c§lCORE DATABASE: OFFLINE","§7SQLite central database","§7Path: §f"+(path.isBlank()?"Unavailable":path));
-        button(inv,13,Material.CHEST,"§b§lCREATE BACKUP","§7Create an immediate Core database backup","§eClick §8» §fCreate");
-        button(inv,15,Material.RECOVERY_COMPASS,"§c§lRESTORE LATEST","§7Restore the newest validated Core backup","§cClick §8» §fRequires confirmation");
-        back(inv,49); p.openInventory(inv);
+        if (!AdminAccess.hasAdminAccess(p)) { deny(p); return; }
+        Object db = AdminServices.coreDatabase();
+        boolean online = db != null;
+        String path = "";
+        if (online) try { path = String.valueOf(db.getClass().getMethod("databasePath").invoke(db)); } catch (Exception ignored) {}
+        showAdminDialog(p, "Data & Backups", "Core database status and safe backup/recovery.",
+            List.of(
+                adminButton(online ? "Core Database: Online" : "Core Database: Offline",
+                    "SQLite central database • " + (path.isBlank() ? "Path unavailable" : path), "/vfadmin data", online ? NamedTextColor.GREEN : NamedTextColor.RED),
+                adminButton("Create Backup", "Create a validated Core database backup.", "/vfadmin backup", NamedTextColor.AQUA),
+                adminButton("Restore Latest", "Open confirmation before restoring the latest backup.", "/vfadmin restoreconfirm", NamedTextColor.RED),
+                adminButton("Back", "Return to Staff administration.", "/vfadmin", NamedTextColor.GRAY)
+            ));
+    }
+
+    private void openRestoreConfirmation(Player p) {
+        showAdminDialog(p, "Confirm Restore", "Restoring replaces the current database state. A safety backup is created first.",
+            List.of(
+                adminButton("Confirm Restore", "Restore the latest validated Core backup.", "/vfadmin restoreyes", NamedTextColor.RED),
+                adminButton("Cancel", "Return without restoring.", "/vfadmin data", NamedTextColor.GREEN)
+            ));
+    }
+
+    private void restoreLatest(Player p) {
+        if (!AdminAccess.hasAdminAccess(p)) { deny(p); return; }
+        AdminServices.restoreLatest().whenComplete((ok, error) -> Bukkit.getScheduler().runTask(plugin, () -> {
+            if (error == null) {
+                plugin.audit(p.getName(), "CORE_RESTORE_LATEST");
+                p.sendMessage(color("&aCore database restore completed. Restart/reload the server if required."));
+            } else {
+                p.sendMessage(color("&cRestore failed: &f" + error.getMessage()));
+            }
+            openData(p);
+        }));
     }
 
     private void route(Player p,String permission,String path) {
