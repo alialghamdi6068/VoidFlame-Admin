@@ -25,6 +25,18 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
             player.sendMessage(ChatColor.GREEN + "VoidFlame Admin configuration reloaded.");
             return true;
         }
+        if (args.length > 0 && args[0].equalsIgnoreCase("advclick")) {
+            if (args.length < 3) {
+                player.sendMessage(ChatColor.RED + "Usage: /vfadmin advclick <dialog> <action>");
+                return true;
+            }
+            try {
+                new AdvancedAdminGui(plugin).dialogClick(player, args[1], Integer.parseInt(args[2]));
+            } catch (NumberFormatException ex) {
+                player.sendMessage(ChatColor.RED + "Invalid Dialog action.");
+            }
+            return true;
+        }
         if (args.length > 0 && args[0].equalsIgnoreCase("punish")) {
             String[] punishmentArgs = java.util.Arrays.copyOfRange(args, 1, args.length);
             plugin.punishments().execute(player, punishmentArgs);
