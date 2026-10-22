@@ -23,6 +23,14 @@ public final class StaffCommand implements CommandExecutor {
             player.sendMessage(ChatColor.RED + "You do not have permission.");
             return true;
         }
+        if (args.length > 0 && args[0].equalsIgnoreCase("select")) {
+            if (args.length < 2) {
+                player.sendMessage(ChatColor.RED + "Usage: /staffgui select <player-uuid>");
+                return true;
+            }
+            plugin.staffGui().selectTarget(player, args[1]);
+            return true;
+        }
         if (args.length > 0) plugin.staffGui().openSection(player, args[0]);
         else plugin.staffGui().openMain(player);
         return true;
