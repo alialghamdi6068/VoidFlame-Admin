@@ -227,42 +227,45 @@ public final class AdvancedAdminGui implements Listener {
         e.setCancelled(true);
         if (!AdminAccess.hasAdminAccess(p)) { p.sendMessage(color("&cJava staff only.")); p.closeInventory(); return; }
         if (e.getClickedInventory() != e.getView().getTopInventory()) return;
-        int s=e.getRawSlot();
-        if (s==49) { new AdminMenu(plugin).open(p); return; }
-        String t=h.type;
-        if (t.equals("punishments")) {
-            if(s==10)openPlayerSelect(p,"ban"); else if(s==12)openPlayerSelect(p,"mute"); else if(s==14)openPlayerSelect(p,"warn"); else if(s==16)openPlayerSelect(p,"kick"); else if(s==28)openHistory(p); else if(s==30)openPlayerSelect(p,"unpunish");
-        } else if(t.startsWith("punish-select:")) {
-            String action=t.substring("punish-select:".length());
-            List<Player> players=sortedPlayers(); if(s>=0&&s<players.size()){Player target=players.get(s); if(action.equals("unpunish")){plugin.punishments().execute(p,new String[]{"unpunish",target.getName()});openPunishments(p);} else if(action.equals("warn")||action.equals("kick")) requestReason(p,action,target,null); else openDuration(p,action,target);}
-        } else if(t.startsWith("duration:")) {
-            String[] x=t.split(":",4); String action=x[1]; Player target=Bukkit.getPlayer(UUID.fromString(x[2])); if(target==null){openPunishments(p);return;}
-            String d=s==10?"30s":s==12?"10m":s==14?"1h":s==16?"1d":null;
-            if(s==28){requestReason(p,action,target,null);} else if(d!=null){requestReason(p,action,target,d);}
-        } else if(t.equals("history-select")) {
-            List<Player> players=sortedPlayers(); if(s>=0&&s<players.size()){plugin.punishments().execute(p,new String[]{"history",players.get(s).getName()});}
-        } else if(t.equals("player-manager")) {
-            List<Player> players=sortedPlayers(); if(s>=0&&s<players.size())openPlayerActions(p,players.get(s));
-        } else if(t.startsWith("player-actions:")) {
-            Player target=Bukkit.getPlayer(UUID.fromString(t.substring("player-actions:".length()))); if(target==null){openPlayerManager(p);return;}
-            if(s==10){p.sendMessage(color("&bCore info for &f"+target.getName()+" &7» &f"+target.getUniqueId()));p.sendMessage(color("&7World: &f"+target.getWorld().getName()+" &7Ping: &f"+target.getPing()));}
-            else if(s==12)p.openInventory(target.getInventory());
-            else if(s==14)p.openInventory(target.getEnderChest());
-            else if(s==16)p.teleportAsync(target.getLocation());
-            else if(s==28)target.teleportAsync(p.getLocation());
-            else if(s==30){p.setGameMode(org.bukkit.GameMode.SPECTATOR);p.setSpectatorTarget(target);}
-            else if(s==32){target.setHealth(target.getMaxHealth());target.setFoodLevel(20);target.setFireTicks(0);}
-            else if(s==34)target.getInventory().clear();
-            else if(s==49)openPlayerManager(p);
-        } else if(t.equals("security-control")) {
-            handleSecurity(p,s);
-        } else if(t.equals("backups")) {
-            if(s==47){AdminServices.backup().whenComplete((v,e2)->Bukkit.getScheduler().runTask(plugin,()->{p.sendMessage(color(e2==null?"&aBackup created.":"&cBackup failed: "+e2.getMessage()));openBackups(p);}));}
-            else {List<Path> bs=AdminServices.backups();if(s>=0&&s<bs.size())confirmRestore(p,bs.get(s));}
-        } else if(t.startsWith("restore:")) {
-            if(s==20){Path b=Path.of(t.substring("restore:".length()));AdminServices.restore(b).whenComplete((v,e2)->Bukkit.getScheduler().runTask(plugin,()->{p.sendMessage(color(e2==null?"&aRestore completed. A safety backup was made first.":"&cRestore failed: "+e2.getMessage()));openBackups(p);}));}
-            else if(s==24)openBackups(p);
-        }
+        dialogClick(p, h.type, e.getRawSlot());
+    }
+
+    public void dialogClick(Player p, String t, int s) {
+        if (!AdminAccess.hasAdminAccess(p)) { p.sendMessage(color("&cJava staff only.")); return; }
+    if (s==49) { new AdminMenu(plugin).open(p); return; }
+    if (t.equals("punishments")) {
+        if(s==10)openPlayerSelect(p,"ban"); else if(s==12)openPlayerSelect(p,"mute"); else if(s==14)openPlayerSelect(p,"warn"); else if(s==16)openPlayerSelect(p,"kick"); else if(s==28)openHistory(p); else if(s==30)openPlayerSelect(p,"unpunish");
+    } else if(t.startsWith("punish-select:")) {
+        String action=t.substring("punish-select:".length());
+        List<Player> players=sortedPlayers(); if(s>=0&&s<players.size()){Player target=players.get(s); if(action.equals("unpunish")){plugin.punishments().execute(p,new String[]{"unpunish",target.getName()});openPunishments(p);} else if(action.equals("warn")||action.equals("kick")) requestReason(p,action,target,null); else openDuration(p,action,target);}
+    } else if(t.startsWith("duration:")) {
+        String[] x=t.split(":",4); String action=x[1]; Player target=Bukkit.getPlayer(UUID.fromString(x[2])); if(target==null){openPunishments(p);return;}
+        String d=s==10?"30s":s==12?"10m":s==14?"1h":s==16?"1d":null;
+        if(s==28){requestReason(p,action,target,null);} else if(d!=null){requestReason(p,action,target,d);}
+    } else if(t.equals("history-select")) {
+        List<Player> players=sortedPlayers(); if(s>=0&&s<players.size()){plugin.punishments().execute(p,new String[]{"history",players.get(s).getName()});}
+    } else if(t.equals("player-manager")) {
+        List<Player> players=sortedPlayers(); if(s>=0&&s<players.size())openPlayerActions(p,players.get(s));
+    } else if(t.startsWith("player-actions:")) {
+        Player target=Bukkit.getPlayer(UUID.fromString(t.substring("player-actions:".length()))); if(target==null){openPlayerManager(p);return;}
+        if(s==10){p.sendMessage(color("&bCore info for &f"+target.getName()+" &7» &f"+target.getUniqueId()));p.sendMessage(color("&7World: &f"+target.getWorld().getName()+" &7Ping: &f"+target.getPing()));}
+        else if(s==12)p.openInventory(target.getInventory());
+        else if(s==14)p.openInventory(target.getEnderChest());
+        else if(s==16)p.teleportAsync(target.getLocation());
+        else if(s==28)target.teleportAsync(p.getLocation());
+        else if(s==30){p.setGameMode(org.bukkit.GameMode.SPECTATOR);p.setSpectatorTarget(target);}
+        else if(s==32){target.setHealth(target.getMaxHealth());target.setFoodLevel(20);target.setFireTicks(0);}
+        else if(s==34)target.getInventory().clear();
+        else if(s==49)openPlayerManager(p);
+    } else if(t.equals("security-control")) {
+        handleSecurity(p,s);
+    } else if(t.equals("backups")) {
+        if(s==47){AdminServices.backup().whenComplete((v,e2)->Bukkit.getScheduler().runTask(plugin,()->{p.sendMessage(color(e2==null?"&aBackup created.":"&cBackup failed: "+e2.getMessage()));openBackups(p);}));}
+        else {List<Path> bs=AdminServices.backups();if(s>=0&&s<bs.size())confirmRestore(p,bs.get(s));}
+    } else if(t.startsWith("restore:")) {
+        if(s==20){Path b=Path.of(t.substring("restore:".length()));AdminServices.restore(b).whenComplete((v,e2)->Bukkit.getScheduler().runTask(plugin,()->{p.sendMessage(color(e2==null?"&aRestore completed. A safety backup was made first.":"&cRestore failed: "+e2.getMessage()));openBackups(p);}));}
+        else if(s==24)openBackups(p);
+    }
     }
 
     private void handleSecurity(Player p,int s) {
