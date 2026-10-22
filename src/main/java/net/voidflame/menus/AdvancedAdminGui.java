@@ -49,7 +49,7 @@ public final class AdvancedAdminGui implements Listener {
             Player target = players.get(i);
             buttons.add(action(target.getName(), "Select " + target.getName() + ".", "/vfadmin advclick punish-select:" + action + " " + target.getUniqueId(), NamedTextColor.AQUA));
         }
-        buttons.add(action("Back", "Return to punishments.", "/vfadmin advclick punishments 49", NamedTextColor.GRAY));
+        buttons.add(action("Back", "Return to punishments.", "/vfadmin punishments", NamedTextColor.GRAY));
         showDialog(staff, action.toUpperCase(Locale.ROOT) + " • Player", "Choose an online player.", buttons);
     }
 
