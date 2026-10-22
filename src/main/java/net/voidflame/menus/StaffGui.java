@@ -144,7 +144,8 @@ public final class StaffGui implements Listener {
     }
 
     private void showInventoryDialog(Player viewer, Player target, boolean enderChest) {
-        if (!AdminAccess.hasStaffAccess(viewer) || !require(viewer, "voidflame.staff.manage")) return;
+        if (!AdminAccess.hasStaffAccess(viewer)) return;
+        if (!require(viewer, target.equals(viewer) ? "voidflame.staff.basic" : "voidflame.staff.manage")) return;
         ItemStack[] contents = enderChest ? target.getEnderChest().getContents() : target.getInventory().getStorageContents();
         List<DialogBody> body = new ArrayList<>();
         body.add(DialogBody.plainMessage(Component.text((enderChest ? "ENDER CHEST" : "PLAYER INVENTORY") + " • " + target.getName(), NamedTextColor.AQUA), 300));
