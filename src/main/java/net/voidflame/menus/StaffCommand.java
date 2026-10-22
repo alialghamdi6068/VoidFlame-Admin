@@ -23,6 +23,14 @@ public final class StaffCommand implements CommandExecutor {
             player.sendMessage(ChatColor.RED + "You do not have permission.");
             return true;
         }
+        if (args.length > 0 && args[0].equalsIgnoreCase("viewinventory")) {
+            if (args.length < 3) {
+                player.sendMessage(ChatColor.RED + "Usage: /staffgui viewinventory <player-uuid> <player|ender>");
+                return true;
+            }
+            plugin.staffGui().viewInventory(player, args[1], args[2].equalsIgnoreCase("ender"));
+            return true;
+        }
         if (args.length > 0 && (args[0].equalsIgnoreCase("worldtp") || args[0].equalsIgnoreCase("worldremove"))) {
             if (args.length < 2) {
                 player.sendMessage(ChatColor.RED + "Missing world identifier.");
