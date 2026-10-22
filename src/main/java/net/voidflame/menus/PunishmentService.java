@@ -111,19 +111,31 @@ final class PunishmentService implements Listener {
             return true;
         }
 
-        hierarchyAllowed(actor, targetId).thenAccept(allowed -> Bukkit.getScheduler().runTask(plugin, () -> {
-            if (!allowed) {
-                actor.sendMessage(color("&cYou cannot punish a player with an equal or higher staff rank."));
-                return;
-            }
-            insert(targetId, targetName, actor, type, reason, expires).thenRun(() -> Bukkit.getScheduler().runTask(plugin, () -> {
-                if (action.equals("ban") || action.equals("tempban")) banned.add(targetId);
-                if (action.equals("mute") || action.equals("tempmute")) muted.add(targetId);
-                applyOnlineAction(action, targetId, reason, expires);
-                actor.sendMessage(color("&aPunishment applied: &f" + type + " &ato &f" + targetName));
-                plugin.audit(actor.getName(), "PUNISH:" + type + ":" + targetName + ":" + reason);
-            }));
-        }));
+        hierarchyAllowed(actor, targetId).whenComplete((allowed, hierarchyError) ->
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (hierarchyError != null) {
+                        plugin.getLogger().warning("Could not verify punishment rank hierarchy: " + hierarchyError.getMessage());
+                        actor.sendMessage(color("&cCould not verify staff hierarchy. No punishment was applied."));
+                        return;
+                    }
+                    if (!Boolean.TRUE.equals(allowed)) {
+                        actor.sendMessage(color("&cYou cannot punish a player with an equal or higher staff rank."));
+                        return;
+                    }
+                    insert(targetId, targetName, actor, type, reason, expires).whenComplete((ignored, insertError) ->
+                            Bukkit.getScheduler().runTask(plugin, () -> {
+                                if (insertError != null) {
+                                    plugin.getLogger().severe("Could not save punishment for " + targetId + ": " + insertError.getMessage());
+                                    actor.sendMessage(color("&cCould not save the punishment. No success was reported."));
+                                    return;
+                                }
+                                if (action.equals("ban") || action.equals("tempban")) banned.add(targetId);
+                                if (action.equals("mute") || action.equals("tempmute")) muted.add(targetId);
+                                applyOnlineAction(action, targetId, reason, expires);
+                                actor.sendMessage(color("&aPunishment applied: &f" + type + " &ato &f" + targetName));
+                                plugin.audit(actor.getName(), "PUNISH:" + type + ":" + targetName + ":" + reason);
+                            }));
+                }));
         return true;
     }
 
