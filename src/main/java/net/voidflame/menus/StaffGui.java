@@ -153,7 +153,7 @@ public final class StaffGui implements Listener {
     public void dialogAction(Player p, String type, int slot) {
         if (!AdminAccess.hasStaffAccess(p)) { msg(p, "no-permission"); return; }
         switch (type.toLowerCase(Locale.ROOT)) {
-            case "gamemode" -> gamemode(p, slot);
+            case "gamemode" -> { if (slot == 15) openMain(p); else gamemode(p, slot); }
             case "speed" -> speed(p, slot);
             case "potions" -> potions(p, slot);
             case "xp" -> xp(p, slot);
