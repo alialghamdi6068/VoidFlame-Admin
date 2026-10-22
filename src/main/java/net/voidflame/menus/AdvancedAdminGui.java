@@ -215,6 +215,20 @@ public final class AdvancedAdminGui implements Listener {
         return Bukkit.getOnlinePlayers().stream().filter(x -> x.getScoreboardTags().contains("voidflame-ffa")).count();
     }
 
+    private void showDialog(Player p, String title, String description, List<ActionButton> actions, List<DialogBody> extraBody) {
+        if (!AdminAccess.hasAdminAccess(p)) { p.sendMessage(color("&cJava staff only.")); return; }
+        List<DialogBody> body = new ArrayList<>();
+        body.add(DialogBody.plainMessage(Component.text("VOIDFLAME ADMINISTRATION", NamedTextColor.AQUA), 300));
+        body.add(DialogBody.plainMessage(Component.text(description, NamedTextColor.GRAY), 320));
+        body.addAll(extraBody);
+        Dialog dialog = Dialog.create(builder -> builder.empty()
+                .base(DialogBase.builder(Component.text("Staff • " + title, NamedTextColor.WHITE))
+                        .externalTitle(Component.text("Staff", NamedTextColor.AQUA)).canCloseWithEscape(true)
+                        .body(body).build())
+                .type(DialogType.multiAction(actions).columns(2).build()));
+        p.showDialog(dialog);
+    }
+
     private void showDialog(Player p, String title, String description, List<ActionButton> actions) {
         if (!AdminAccess.hasAdminAccess(p)) { p.sendMessage(color("&cJava staff only.")); return; }
         Dialog dialog = Dialog.create(builder -> builder.empty()
@@ -257,8 +271,8 @@ public final class AdvancedAdminGui implements Listener {
     } else if(t.startsWith("player-actions:")) {
         Player target=Bukkit.getPlayer(UUID.fromString(t.substring("player-actions:".length()))); if(target==null){openPlayerManager(p);return;}
         if(s==10){p.sendMessage(color("&bCore info for &f"+target.getName()+" &7» &f"+target.getUniqueId()));p.sendMessage(color("&7World: &f"+target.getWorld().getName()+" &7Ping: &f"+target.getPing()));}
-        else if(s==12)p.openInventory(target.getInventory());
-        else if(s==14)p.openInventory(target.getEnderChest());
+        else if(s==12)showInventoryDialog(p,target,false);
+        else if(s==14)showInventoryDialog(p,target,true);
         else if(s==16)p.teleportAsync(target.getLocation());
         else if(s==28)target.teleportAsync(p.getLocation());
         else if(s==30){p.setGameMode(org.bukkit.GameMode.SPECTATOR);p.setSpectatorTarget(target);}
@@ -284,6 +298,29 @@ public final class AdvancedAdminGui implements Listener {
             } catch (NumberFormatException ex) { p.sendMessage(color("&cInvalid backup selection.")); openBackups(p); }
         } else if (s == 24) openBackups(p);
     }
+    }
+
+    private void showInventoryDialog(Player staff, Player target, boolean enderChest) {
+        if (!AdminAccess.hasAdminAccess(staff)) { staff.sendMessage(color("&cJava staff only.")); return; }
+        ItemStack[] contents = enderChest ? target.getEnderChest().getContents() : target.getInventory().getStorageContents();
+        List<DialogBody> body = new ArrayList<>();
+        body.add(DialogBody.plainMessage(Component.text((enderChest ? "ENDER CHEST" : "PLAYER INVENTORY") + " • " + target.getName(), NamedTextColor.AQUA), 300));
+        boolean found = false;
+        for (int slot = 0; slot < contents.length; slot++) {
+            ItemStack item = contents[slot];
+            if (item == null || item.getType() == Material.AIR) continue;
+            found = true;
+            body.add(DialogBody.plainMessage(Component.text("Slot " + (slot + 1) + ": " + item.getAmount() + " × "
+                    + item.getType().name().toLowerCase(Locale.ROOT).replace('_', ' '), NamedTextColor.WHITE), 300));
+        }
+        if (!found) body.add(DialogBody.plainMessage(Component.text("No items in this inventory.", NamedTextColor.GRAY), 300));
+        String type = "player-actions:" + target.getUniqueId();
+        List<ActionButton> actions = List.of(
+                action("Refresh", "Refresh this inventory listing.", "/vfadmin advclick " + type + (enderChest ? " 14" : " 12"), NamedTextColor.AQUA),
+                action("Back", "Return to player management.", "/vfadmin advclick " + type + " 49", NamedTextColor.GRAY));
+        showDialog(staff, (enderChest ? "Ender Chest" : "Inventory") + " • " + target.getName(),
+                "Read-only item inspection. Item editing uses Minecraft inventory screens and is not available in Dialogs.",
+                actions, body);
     }
 
     private void handleSecurity(Player p,int s) {
