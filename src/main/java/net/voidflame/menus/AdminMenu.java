@@ -235,54 +235,6 @@ public final class AdminMenu implements Listener {
         Bukkit.getScheduler().runTask(plugin,()->p.performCommand(command));
     }
 
-    private void click(Player p,String type,int slot) {
-        if(slot==49){open(p);return;}
-        switch(type){
-            case "main" -> {
-                if(slot==10)openPractice(p);
-                else if(slot==12)openManagement(p);
-                else if(slot==14)openServer(p);
-                else if(slot==16)new AdvancedAdminGui(plugin).openSecurity(p);
-                else if(slot==28)openData(p);
-                else if(slot==30)plugin.staffGui().openMain(p);
-                else if(slot==32){plugin.reloadConfig();plugin.audit(p.getName(),"RELOAD_ADMIN_CONFIG");p.sendMessage(color(plugin.getConfig().getString("messages.reload","&aReloaded.")));open(p);}
-                else if(slot==34)new AdvancedAdminGui(plugin).openAnalytics(p);
-            }
-            case "practice" -> {
-                if(slot==10)route(p,"voidflame.admin.duels","integrations.duels");
-                else if(slot==11)route(p,"voidflame.admin.kits","integrations.kits");
-                else if(slot==12)route(p,"voidflame.admin.arenas","integrations.arenas");
-                else if(slot==13)route(p,"voidflame.admin.queues","integrations.queues");
-                else if(slot==14)route(p,"voidflame.admin.ffa","integrations.ffa");
-                else if(slot==15)route(p,"voidflame.admin.rewards","integrations.rewards");
-            }
-            case "management" -> {
-                if(slot==10)new AdvancedAdminGui(plugin).openPlayerManager(p);
-                else if(slot==12)route(p,"voidflame.admin.menus","integrations.menus");
-                else if(slot==14)route(p,"voidflame.admin.settings","integrations.settings");
-                else if(slot==16)new AdvancedAdminGui(plugin).openPunishments(p);
-            }
-            case "server" -> {
-                StaffGui staff=plugin.staffGui();
-                if(slot==10)staff.openWorldsFromAdmin(p);
-                else if(slot==11)staff.openTimeFromAdmin(p);
-                else if(slot==12)staff.openServerFromAdmin(p);
-                else if(slot==13)staff.openFlagsFromAdmin(p);
-            }
-            case "security" -> {
-                if(slot==11){if(AdminServices.security()==null){p.sendMessage(color("&cVoidFlame-Security is not installed."));return;}boolean v=AdminServices.securityBoolean("isProtectionEnabled",false);AdminServices.setSecurity("setProtectionEnabled",!v);plugin.audit(p.getName(),"SECURITY_TOGGLE:"+( !v));openSecurity(p);}
-                else if(slot==13){if(AdminServices.security()==null){p.sendMessage(color("&cVoidFlame-Security is not installed."));return;}boolean v=AdminServices.securityBoolean("isLockdown",false);AdminServices.setSecurity("setLockdown",!v);plugin.audit(p.getName(),"SECURITY_LOCKDOWN:"+( !v));openSecurity(p);}
-                else if(slot==15){openSecurity(p);}
-                else if(slot==17){p.closeInventory();Bukkit.getScheduler().runTask(plugin,()->p.performCommand("antibot gui"));}
-            }
-            case "data" -> {
-                if(slot==11){openData(p);}
-                else if(slot==13){AdminServices.backup().whenComplete((ok,error)->Bukkit.getScheduler().runTask(plugin,()->{if(error==null){plugin.audit(p.getName(),"CORE_BACKUP");p.sendMessage(color("&aCore database backup created."));}else p.sendMessage(color("&cBackup failed: &f"+error.getMessage()));}));}
-                else if(slot==15){confirmDataRestore(p);}
-            }
-        }
-    }
-
     private void confirmDataRestore(Player p) {
         if (!AdminAccess.hasAdminAccess(p)) { deny(p); return; }
         showAdminDialog(p, "Confirm Database Restore",
@@ -292,40 +244,6 @@ public final class AdminMenu implements Listener {
                         adminButton("Cancel", "Return without changing data.", "/vfadmin data", NamedTextColor.GREEN)));
     }
 
-    private void confirmClick(Player p,int slot){
-        if(slot==20){AdminServices.restoreLatest().whenComplete((ok,error)->Bukkit.getScheduler().runTask(plugin,()->{if(error==null){plugin.audit(p.getName(),"CORE_RESTORE_LATEST");p.sendMessage(color("&aCore database restore completed. Restart/reload the server if required."));}else p.sendMessage(color("&cRestore failed: &f"+error.getMessage()));openData(p);}));}
-        else if(slot==24)openData(p);
-    }
-
-    @EventHandler public void onClick(InventoryClickEvent e){
-        if(!(e.getWhoClicked() instanceof Player p))return;
-        if(!(e.getView().getTopInventory().getHolder() instanceof Holder h))return;
-        e.setCancelled(true);
-        if(!AdminAccess.hasAdminAccess(p)){deny(p);p.closeInventory();return;}
-        if(e.getClickedInventory()!=e.getView().getTopInventory())return;
-        if(h.type.equals("restore-confirm"))confirmClick(p,e.getRawSlot());else click(p,h.type,e.getRawSlot());
-    }
-
-    @EventHandler public void onDrag(InventoryDragEvent e){if(e.getView().getTopInventory().getHolder() instanceof Holder)e.setCancelled(true);}
-
-    private Inventory gui(String type,String title){
-        int rows=Math.max(1,Math.min(6,plugin.getConfig().getInt("gui.rows",6)));
-        Inventory inv=Bukkit.createInventory(new Holder(type),rows*9,color(title));
-        Material filler=Material.matchMaterial(plugin.getConfig().getString("gui.filler","AIR"));
-        Material accent=Material.matchMaterial(plugin.getConfig().getString("gui.accent","AIR"));
-        // Keep empty slots empty by default; decorative panes are opt-in in config.
-        if(filler!=null && filler!=Material.AIR)
-            for(int i=0;i<inv.getSize();i++)inv.setItem(i,item(filler," "));
-        if(accent!=null && accent!=Material.AIR) {
-            for(int i=0;i<9;i++)inv.setItem(i,item(accent," "));
-            for(int i=inv.getSize()-9;i<inv.getSize();i++)inv.setItem(i,item(accent," "));
-        }
-        return inv;
-    }
-    private void button(Inventory inv,int slot,Material material,String name,String... lore){if(slot<inv.getSize())inv.setItem(slot,item(material,name,lore));}
-    private void back(Inventory inv,int slot){button(inv,slot,Material.ARROW,"§7§lBACK","§7Return to Administration");}
-    private ItemStack item(Material m,String name,String... lore){ItemStack i=new ItemStack(m);ItemMeta meta=i.getItemMeta();if(meta!=null){meta.setDisplayName(color(name));meta.setLore(List.of(lore).stream().map(this::color).toList());i.setItemMeta(meta);}return i;}
     private void deny(Player p){p.sendMessage(color(plugin.getConfig().getString("messages.no-permission","&cNo permission.")));}
     private String color(String s){return ChatColor.translateAlternateColorCodes('&',s==null?"":s);}
-    static final class Holder implements InventoryHolder {final String type;Holder(String type){this.type=type;}@Override public Inventory getInventory(){return null;}}
 }
