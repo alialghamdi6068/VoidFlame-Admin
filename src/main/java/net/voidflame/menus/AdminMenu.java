@@ -283,11 +283,13 @@ public final class AdminMenu implements Listener {
         }
     }
 
-    private void confirmDataRestore(Player p){
-        Inventory inv=gui("restore-confirm","§8VoidFlame §3• §cConfirm Restore");
-        button(inv,20,Material.RED_CONCRETE,"§c§lCONFIRM RESTORE","§7Restore the latest Core database backup.","§cThis can replace current database state.");
-        button(inv,24,Material.LIME_CONCRETE,"§a§lCANCEL","§7Return without restoring.");
-        p.openInventory(inv);
+    private void confirmDataRestore(Player p) {
+        if (!AdminAccess.hasAdminAccess(p)) { deny(p); return; }
+        showAdminDialog(p, "Confirm Database Restore",
+                "Restore the latest Core database backup? This operation can replace current data. Continue only if you understand the impact.",
+                List.of(
+                        adminButton("Confirm Restore", "Restore the latest backup.", "/vfadmin restoreyes", NamedTextColor.RED),
+                        adminButton("Cancel", "Return without changing data.", "/vfadmin data", NamedTextColor.GREEN)));
     }
 
     private void confirmClick(Player p,int slot){
