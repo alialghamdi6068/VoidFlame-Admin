@@ -35,38 +35,38 @@ public final class AdvancedAdminGui implements Listener {
     public AdvancedAdminGui(VoidFlameMenusPlugin plugin) { this.plugin = plugin; }
 
     public void openPunishments(Player p) {
-        Inventory inv = gui("punishments", ROOT + "Punishments");
-        button(inv, 10, Material.PLAYER_HEAD, "§c§lBAN", "§7Select a player, then choose duration.");
-        button(inv, 12, Material.CHAIN_COMMAND_BLOCK, "§6§lMUTE", "§7Select a player, then choose duration.");
-        button(inv, 14, Material.YELLOW_DYE, "§e§lWARN", "§7Select a player and enter a reason.");
-        button(inv, 16, Material.IRON_BOOTS, "§f§lKICK", "§7Select a player and enter a reason.");
-        button(inv, 28, Material.BOOK, "§b§lHISTORY", "§7Select an online player to view history.");
-        button(inv, 30, Material.LIME_DYE, "§a§lUNPUNISH", "§7Select a player and clear active punishments.");
-        button(inv, 49, Material.ARROW, "§7§lBACK", "§7Return to administration.");
-        p.openInventory(inv);
+        showDialog(p, "Punishments", "Select a moderation workflow.", List.of(
+                action("Ban", "Select a player and duration.", "/vfadmin advclick punishments 10", NamedTextColor.RED),
+                action("Mute", "Select a player and duration.", "/vfadmin advclick punishments 12", NamedTextColor.GOLD),
+                action("Warn", "Select a player and reason.", "/vfadmin advclick punishments 14", NamedTextColor.YELLOW),
+                action("Kick", "Select a player and reason.", "/vfadmin advclick punishments 16", NamedTextColor.WHITE),
+                action("History", "View punishment history.", "/vfadmin advclick punishments 28", NamedTextColor.AQUA),
+                action("Unpunish", "Clear an active punishment.", "/vfadmin advclick punishments 30", NamedTextColor.GREEN),
+                action("Back", "Return to Staff.", "/vfadmin", NamedTextColor.GRAY)));
     }
 
     private void openPlayerSelect(Player staff, String action) {
+        if (!AdminAccess.hasAdminAccess(staff)) return;
+        List<ActionButton> buttons = new ArrayList<>();
         List<Player> players = sortedPlayers();
-        Inventory inv = gui("punish-select:" + action, ROOT + action.toUpperCase(Locale.ROOT) + " • Player");
-        for (int i = 0; i < Math.min(players.size(), 45); i++) {
+        for (int i = 0; i < Math.min(players.size(), 78); i++) {
             Player target = players.get(i);
-            button(inv, i, Material.PLAYER_HEAD, "§f" + target.getName(), "§7Click to continue.");
+            buttons.add(action(target.getName(), "Select " + target.getName() + ".", "/vfadmin advclick punish-select:" + action + " " + i, NamedTextColor.AQUA));
         }
-        button(inv, 49, Material.ARROW, "§7§lBACK");
-        staff.openInventory(inv);
+        buttons.add(action("Back", "Return to punishments.", "/vfadmin advclick punishments 49", NamedTextColor.GRAY));
+        showDialog(staff, action.toUpperCase(Locale.ROOT) + " • Player", "Choose an online player.", buttons);
     }
 
     private void openDuration(Player staff, String action, Player target) {
-        Inventory inv = gui("duration:" + action + ":" + target.getUniqueId(), ROOT + action.toUpperCase(Locale.ROOT) + " • " + target.getName());
-        button(inv, 10, Material.CLOCK, "§f30 Seconds", "§7Temporary punishment.");
-        button(inv, 12, Material.CLOCK, "§f10 Minutes", "§7Temporary punishment.");
-        button(inv, 14, Material.CLOCK, "§f1 Hour", "§7Temporary punishment.");
-        button(inv, 16, Material.CLOCK, "§f1 Day", "§7Temporary punishment.");
-        button(inv, 28, Material.BARRIER, "§cPermanent", "§7No expiration.");
-        button(inv, 30, Material.WRITABLE_BOOK, "§eCustom Reason", "§7Choose duration first, then type reason.");
-        button(inv, 49, Material.ARROW, "§7§lBACK");
-        staff.openInventory(inv);
+        String type = "duration:" + action + ":" + target.getUniqueId();
+        showDialog(staff, action.toUpperCase(Locale.ROOT) + " • " + target.getName(),
+                "Choose a duration. You will be prompted for a reason in chat.",
+                List.of(action("30 Seconds", "Temporary punishment.", "/vfadmin advclick " + type + " 10", NamedTextColor.AQUA),
+                        action("10 Minutes", "Temporary punishment.", "/vfadmin advclick " + type + " 12", NamedTextColor.AQUA),
+                        action("1 Hour", "Temporary punishment.", "/vfadmin advclick " + type + " 14", NamedTextColor.AQUA),
+                        action("1 Day", "Temporary punishment.", "/vfadmin advclick " + type + " 16", NamedTextColor.AQUA),
+                        action("Permanent", "No expiration.", "/vfadmin advclick " + type + " 28", NamedTextColor.RED),
+                        action("Back", "Return to player selection.", "/vfadmin advclick punishments 10", NamedTextColor.GRAY)));
     }
 
     private void requestReason(Player staff, String action, Player target, String duration) {
@@ -86,82 +86,82 @@ public final class AdvancedAdminGui implements Listener {
     }
 
     private void openHistory(Player staff) {
+        List<ActionButton> buttons = new ArrayList<>();
         List<Player> players = sortedPlayers();
-        Inventory inv = gui("history-select", ROOT + "Punishment History");
-        for (int i = 0; i < Math.min(players.size(), 45); i++) {
+        for (int i = 0; i < Math.min(players.size(), 78); i++) {
             Player target = players.get(i);
-            button(inv, i, Material.PLAYER_HEAD, "§f" + target.getName(), "§7Click to view recent punishments.");
+            buttons.add(action(target.getName(), "View recent punishment history.", "/vfadmin advclick history-select " + i, NamedTextColor.AQUA));
         }
-        button(inv, 49, Material.ARROW, "§7§lBACK");
-        staff.openInventory(inv);
+        buttons.add(action("Back", "Return to punishments.", "/vfadmin punishments", NamedTextColor.GRAY));
+        showDialog(staff, "Punishment History", "Select an online player.", buttons);
     }
 
     public void openPlayerManager(Player p) {
-        Inventory inv = gui("player-manager", ROOT + "Player Manager");
+        List<ActionButton> buttons = new ArrayList<>();
         List<Player> players = sortedPlayers();
-        for (int i=0;i<Math.min(players.size(),45);i++) {
-            Player target=players.get(i);
-            button(inv,i,Material.PLAYER_HEAD,"§f"+target.getName(),"§7Click to manage this player.");
+        for (int i = 0; i < Math.min(players.size(), 78); i++) {
+            Player target = players.get(i);
+            buttons.add(action(target.getName(), "Open player management.", "/vfadmin advclick player-manager " + i, NamedTextColor.AQUA));
         }
-        button(inv,49,Material.ARROW,"§7§lBACK");
-        p.openInventory(inv);
+        buttons.add(action("Back", "Return to Staff.", "/vfadmin", NamedTextColor.GRAY));
+        showDialog(p, "Player Manager", "Select an online player.", buttons);
     }
 
     private void openPlayerActions(Player staff, Player target) {
-        Inventory inv=gui("player-actions:"+target.getUniqueId(),ROOT+"Player • "+target.getName());
-        button(inv,10,Material.BOOK,"§b§lCORE INFO","§7UUID: §f"+target.getUniqueId(),"§7World: §f"+target.getWorld().getName(),"§7Health: §f"+String.format(Locale.ROOT,"%.1f",target.getHealth()),"§7Ping: §f"+target.getPing());
-        button(inv,12,Material.CHEST,"§e§lINVENTORY","§7Open and edit live inventory.");
-        button(inv,14,Material.ENDER_CHEST,"§5§lENDER CHEST","§7Open and edit ender chest.");
-        button(inv,16,Material.COMPASS,"§a§lTELEPORT TO","§7Teleport yourself to the player.");
-        button(inv,28,Material.ENDER_PEARL,"§d§lTELEPORT HERE","§7Teleport the player to you.");
-        button(inv,30,Material.SPYGLASS,"§6§lSPECTATE","§7Set yourself to spectator and follow target.");
-        button(inv,32,Material.HEART_OF_THE_SEA,"§c§lHEAL","§7Restore health and hunger.");
-        button(inv,34,Material.BARRIER,"§c§lCLEAR INVENTORY","§7Clear the player's inventory.");
-        button(inv,49,Material.ARROW,"§7§lBACK");
-        staff.openInventory(inv);
+        String type = "player-actions:" + target.getUniqueId();
+        showDialog(staff, "Player • " + target.getName(),
+                "UUID: " + target.getUniqueId() + " • World: " + target.getWorld().getName()
+                        + " • Health: " + String.format(Locale.ROOT, "%.1f", target.getHealth()) + " • Ping: " + target.getPing(),
+                List.of(action("Core Info", "Show player details.", "/vfadmin advclick " + type + " 10", NamedTextColor.AQUA),
+                        action("Open Inventory", "Open and edit live inventory.", "/vfadmin advclick " + type + " 12", NamedTextColor.GOLD),
+                        action("Ender Chest", "Open and edit ender chest.", "/vfadmin advclick " + type + " 14", NamedTextColor.LIGHT_PURPLE),
+                        action("Teleport To", "Teleport yourself to the player.", "/vfadmin advclick " + type + " 16", NamedTextColor.GREEN),
+                        action("Teleport Here", "Teleport the player to you.", "/vfadmin advclick " + type + " 28", NamedTextColor.YELLOW),
+                        action("Spectate", "Follow target in spectator mode.", "/vfadmin advclick " + type + " 30", NamedTextColor.BLUE),
+                        action("Heal", "Restore health and hunger.", "/vfadmin advclick " + type + " 32", NamedTextColor.GREEN),
+                        action("Clear Inventory", "Clear the player's inventory.", "/vfadmin advclick " + type + " 34", NamedTextColor.RED),
+                        action("Back", "Return to player list.", "/vfadmin advclick player-manager 49", NamedTextColor.GRAY)));
     }
 
     public void openSecurity(Player p) {
-        Inventory inv = gui("security-control", ROOT + "Security Control");
         int rate = AdminServices.securityInt("getMaxActionsPerSecond", 8);
         int join = AdminServices.securityInt("getJoinThreshold", 4);
         int verify = AdminServices.securityInt("getVerifyScore", 5);
         int block = AdminServices.securityInt("getBlockScore", 20);
         boolean on = AdminServices.securityBoolean("isProtectionEnabled", true);
         boolean lock = AdminServices.securityBoolean("isLockdown", false);
-        button(inv, 10, on ? Material.LIME_DYE : Material.RED_DYE, on ? "§a§lPROTECTION ON" : "§c§lPROTECTION OFF", "§7Click to toggle.");
-        button(inv, 12, lock ? Material.REDSTONE_BLOCK : Material.IRON_BLOCK, lock ? "§4§lLOCKDOWN ON" : "§7§lLOCKDOWN OFF", "§7Click to toggle.");
-        button(inv, 14, Material.COMPARATOR, "§b§lACTIONS / SEC", "§7Current: §f" + rate, "§eClick §8» §fCycle 4 / 8 / 12 / 20");
-        button(inv, 16, Material.SPAWNER, "§6§lJOIN THRESHOLD", "§7Current: §f" + join, "§eClick §8» §fCycle 2 / 4 / 6 / 10");
-        button(inv, 28, Material.REDSTONE, "§c§lVERIFY SCORE", "§7Current: §f" + verify, "§eClick §8» §fCycle 3 / 5 / 8 / 12");
-        button(inv, 30, Material.TNT, "§4§lBLOCK SCORE", "§7Current: §f" + block, "§eClick §8» §fCycle 10 / 20 / 30 / 50");
-        button(inv, 32, Material.SHIELD, "§b§lSTATUS", "§7Level: §f" + AdminServices.securityInt("getProtectionLevel", 0), "§7Verifying: §f" + AdminServices.securityInt("getVerifyingCount", 0), "§7Whitelist: §f" + AdminServices.securityInt("getWhitelistSize", 0));
-        button(inv, 34, Material.NAME_TAG, "§e§lWHITELIST", "§7Open Security whitelist.");
-        button(inv, 49, Material.ARROW, "§7§lBACK");
-        p.openInventory(inv);
+        showDialog(p, "Security Control", "AntiBot: " + (on ? "ON" : "OFF") + " • Lockdown: " + (lock ? "ON" : "OFF")
+                        + " • Rate: " + rate + "/s • Join threshold: " + join + " • Verify: " + verify + " • Block: " + block,
+                List.of(action(on ? "Disable Protection" : "Enable Protection", "Toggle AntiBot protection.", "/vfadmin advclick security-control 10", on ? NamedTextColor.RED : NamedTextColor.GREEN),
+                        action(lock ? "Disable Lockdown" : "Enable Lockdown", "Toggle emergency lockdown.", "/vfadmin advclick security-control 12", NamedTextColor.GOLD),
+                        action("Cycle Actions / Sec", "Cycle 4 / 8 / 12 / 20.", "/vfadmin advclick security-control 14", NamedTextColor.AQUA),
+                        action("Cycle Join Threshold", "Cycle 2 / 4 / 6 / 10.", "/vfadmin advclick security-control 16", NamedTextColor.BLUE),
+                        action("Cycle Verify Score", "Cycle 3 / 5 / 8 / 12.", "/vfadmin advclick security-control 28", NamedTextColor.YELLOW),
+                        action("Cycle Block Score", "Cycle 10 / 20 / 30 / 50.", "/vfadmin advclick security-control 30", NamedTextColor.RED),
+                        action("Whitelist", "Open Security whitelist.", "/antibot gui", NamedTextColor.AQUA),
+                        action("Back", "Return to Staff.", "/vfadmin", NamedTextColor.GRAY)));
     }
 
     public void openBackups(Player p) {
-        Inventory inv = gui("backups", ROOT + "Database Backups");
+        List<ActionButton> buttons = new ArrayList<>();
         List<Path> backups = AdminServices.backups();
-        if (backups.isEmpty()) {
-            button(inv, 22, Material.BARRIER, "§c§lNO BACKUPS", "§7Create a backup first.");
-        } else {
-            for (int i = 0; i < Math.min(backups.size(), 45); i++) {
-                Path b = backups.get(i);
-                button(inv, i, Material.CHEST, "§b" + b.getFileName(), "§7Click to restore this backup.", "§cA safety backup is created first.");
-            }
+        for (int i = 0; i < Math.min(backups.size(), 70); i++) {
+            Path backup = backups.get(i);
+            buttons.add(action(backup.getFileName().toString(), "Review restore options for this backup.", "/vfadmin advclick backups " + i, NamedTextColor.GOLD));
         }
-        button(inv, 47, Material.CHEST, "§a§lCREATE BACKUP", "§7Create a new validated backup.");
-        button(inv, 49, Material.ARROW, "§7§lBACK");
-        p.openInventory(inv);
+        buttons.add(action("Create Backup", "Create a validated database backup.", "/vfadmin advclick backups 47", NamedTextColor.GREEN));
+        buttons.add(action("Back", "Return to Staff.", "/vfadmin", NamedTextColor.GRAY));
+        showDialog(p, "Database Backups", backups.isEmpty() ? "No backups found. Create one first." : "Choose a backup.", buttons);
     }
 
     private void confirmRestore(Player p, Path backup) {
-        Inventory inv = gui("restore:" + backup.toAbsolutePath(), ROOT + "Confirm Restore");
-        button(inv, 20, Material.RED_CONCRETE, "§c§lCONFIRM RESTORE", "§7" + backup.getFileName(), "§cA safety backup is created first.");
-        button(inv, 24, Material.LIME_CONCRETE, "§a§lCANCEL");
-        p.openInventory(inv);
+        List<Path> backups = AdminServices.backups();
+        int index = backups.indexOf(backup);
+        if (index < 0) { p.sendMessage(color("&cBackup is no longer available.")); openBackups(p); return; }
+        showDialog(p, "Confirm Restore", "Restore " + backup.getFileName()
+                        + "? A safety backup is created first. This may replace current database contents.",
+                List.of(action("Confirm Restore", "Proceed with restore.", "/vfadmin advclick restore:" + index + " 20", NamedTextColor.RED),
+                        action("Cancel", "Return without changes.", "/vfadmin advclick backups 49", NamedTextColor.GREEN)));
     }
 
     public void openAnalytics(Player p) {
@@ -219,6 +219,23 @@ public final class AdvancedAdminGui implements Listener {
     }
     private long countFfa() {
         return Bukkit.getOnlinePlayers().stream().filter(x -> x.getScoreboardTags().contains("voidflame-ffa")).count();
+    }
+
+    private void showDialog(Player p, String title, String description, List<ActionButton> actions) {
+        if (!AdminAccess.hasAdminAccess(p)) { p.sendMessage(color("&cJava staff only.")); return; }
+        Dialog dialog = Dialog.create(builder -> builder.empty()
+                .base(DialogBase.builder(Component.text("Staff • " + title, NamedTextColor.WHITE))
+                        .externalTitle(Component.text("Staff", NamedTextColor.AQUA)).canCloseWithEscape(true)
+                        .body(List.of(DialogBody.plainMessage(Component.text("VOIDFLAME ADMINISTRATION", NamedTextColor.AQUA), 300),
+                                DialogBody.plainMessage(Component.text(description, NamedTextColor.GRAY), 320)))
+                        .build())
+                .type(DialogType.multiAction(actions).columns(2).build()));
+        p.showDialog(dialog);
+    }
+
+    private ActionButton action(String label, String tooltip, String command, NamedTextColor color) {
+        return ActionButton.create(Component.text(label, color), Component.text(tooltip, NamedTextColor.GRAY), 180,
+                DialogAction.commandTemplate(command));
     }
 
     @EventHandler public void click(InventoryClickEvent e) {
