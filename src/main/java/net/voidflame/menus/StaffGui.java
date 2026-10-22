@@ -138,6 +138,29 @@ public final class StaffGui implements Listener {
             180, DialogAction.commandTemplate(command));
     }
 
+    public void selectTarget(Player p, String rawId) {
+        if (!AdminAccess.hasStaffAccess(p) || !p.hasPermission("voidflame.staff.players")) {
+            msg(p, "no-permission");
+            return;
+        }
+        try {
+            UUID selectedId = UUID.fromString(rawId);
+            Player selected = Bukkit.getPlayer(selectedId);
+            if (selected == null) {
+                p.sendMessage(color("&cThat player is no longer online."));
+                openPlayers(p);
+                return;
+            }
+            targets.put(p.getUniqueId(), selectedId);
+            String requested = pendingSection.remove(p.getUniqueId());
+            if (requested != null) openSection(p, requested);
+            else openPlayerManager(p);
+        } catch (IllegalArgumentException ex) {
+            p.sendMessage(color("&cInvalid player selection."));
+            openPlayers(p);
+        }
+    }
+
     public void openSection(Player p, String section) {
         if (!AdminAccess.hasStaffAccess(p)) { msg(p, "no-permission"); return; }
         String normalized = section.toLowerCase(Locale.ROOT);
@@ -152,21 +175,7 @@ public final class StaffGui implements Listener {
         switch (normalized) {
             case "main" -> openMain(p);
             case "players" -> openPlayers(p);
-            case "select" -> {
-                if (!p.hasPermission("voidflame.staff.players") || args.length < 2) { msg(p, "no-permission"); return; }
-                try {
-                    UUID selectedId = UUID.fromString(args[1]);
-                    Player selected = Bukkit.getPlayer(selectedId);
-                    if (selected == null) { p.sendMessage(color("&cThat player is no longer online.")); openPlayers(p); return; }
-                    targets.put(p.getUniqueId(), selectedId);
-                    String requested = pendingSection.remove(p.getUniqueId());
-                    if (requested != null) openSection(p, requested);
-                    else openPlayerManager(p);
-                } catch (IllegalArgumentException ex) {
-                    p.sendMessage(color("&cInvalid player selection."));
-                    openPlayers(p);
-                }
-            }
+            case "select" -> openPlayers(p);
             case "heal" -> main(p, 10);
             case "gamemode" -> main(p, 11);
             case "protection" -> main(p, 12);
