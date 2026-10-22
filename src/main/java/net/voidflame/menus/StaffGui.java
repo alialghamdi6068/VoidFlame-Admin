@@ -75,24 +75,6 @@ public final class StaffGui implements Listener {
         plugin.saveConfig();
     }
 
-    private Inventory gui(String type,int rows,String title) {
-        Inventory i=Bukkit.createInventory(new Holder(type),rows*9,color(title));
-        Material filler=Material.matchMaterial(plugin.getConfig().getString("gui.filler","AIR"));
-        // AIR leaves unused slots genuinely empty; only fill when explicitly configured.
-        if(filler!=null && filler!=Material.AIR) {
-            ItemStack pane=item(filler," ");
-            for(int n=0;n<i.getSize();n++) i.setItem(n,pane);
-        }
-        return i;
-    }
-
-    private ItemStack item(Material m,String name,String... lore) {
-        ItemStack i=new ItemStack(m); ItemMeta meta=i.getItemMeta();
-        if(meta!=null){meta.setDisplayName(color(name));meta.setLore(Arrays.stream(lore).map(this::color).toList());i.setItemMeta(meta);}
-        return i;
-    }
-    private void put(Inventory i,int slot,Material m,String name,String... lore){if(slot<i.getSize())i.setItem(slot,item(m,name,lore));}
-
     public void openMain(Player p) {
         if (!AdminAccess.hasStaffAccess(p)) { msg(p,"no-permission"); return; }
         Player selected = target(p);
@@ -288,31 +270,6 @@ public final class StaffGui implements Listener {
         }
     }
 
-    @EventHandler public void click(InventoryClickEvent e) {
-        if(!(e.getWhoClicked() instanceof Player p))return;
-        if(!(e.getView().getTopInventory().getHolder() instanceof Holder h))return;
-        e.setCancelled(true);
-        if(!AdminAccess.hasStaffAccess(p)){msg(p,"no-permission");p.closeInventory();return;}
-        if(e.getClickedInventory()!=e.getView().getTopInventory()) return;
-        int s=e.getRawSlot();
-        switch(h.type){
-            case "main" -> main(p,s);
-            case "players" -> players(p,s);
-            case "player" -> playerManager(p,s);
-            case "gamemode" -> gamemode(p,s);
-            case "speed" -> speed(p,s);
-            case "potions" -> potions(p,s);
-            case "xp" -> xp(p,s);
-            case "armor" -> armorMenu(p,s);
-            case "server" -> server(p,s);
-            case "world" -> worlds(p,s,e.isRightClick());
-            case "time" -> time(p,s);
-            case "flags" -> flagMenu(p,s);
-            case "confirm" -> confirm(p,s);
-        }
-    }
-
-    @EventHandler public void drag(InventoryDragEvent e){if(e.getView().getTopInventory().getHolder() instanceof Holder)e.setCancelled(true);}
     @EventHandler public void quit(PlayerQuitEvent e){targets.entrySet().removeIf(x->x.getValue().equals(e.getPlayer().getUniqueId()));frozen.remove(e.getPlayer().getUniqueId());}
 
     @EventHandler public void freezeMove(org.bukkit.event.player.PlayerMoveEvent e){
@@ -385,18 +342,6 @@ public final class StaffGui implements Listener {
                 .type(DialogType.multiAction(actions).columns(2).build()));
         p.showDialog(dialog);
     }
-    private void players(Player p,int s){
-        if(s==49){openMain(p);return;}ItemStack x=p.getOpenInventory().getTopInventory().getItem(s);
-        if(x==null||x.getType()!=Material.PLAYER_HEAD||x.getItemMeta()==null)return;
-        String n=ChatColor.stripColor(x.getItemMeta().getDisplayName());Player t=Bukkit.getPlayerExact(n);
-        if(t!=null){
-            targets.put(p.getUniqueId(),t.getUniqueId());
-            String requested = pendingSection.remove(p.getUniqueId());
-            if (requested != null) openSection(p, requested);
-            else openPlayerManager(p);
-        }
-    }
-
     private void openPlayerManager(Player p) {
         if (!require(p, "voidflame.staff.players")) return;
         Player t = target(p);
@@ -407,19 +352,6 @@ public final class StaffGui implements Listener {
                 16, t != null && frozen.contains(t.getUniqueId()) ? "Unfreeze Target" : "Freeze Target",
                 17, "Back to Staff"));
     }
-    private void playerManager(Player p,int s){
-        Player t=target(p);if(s==17){openMain(p);return;}if(t==null){openPlayers(p);return;}
-        if(s==10){openPlayers(p);return;}
-        if(s==11){p.sendMessage(color("&8Health: &f"+String.format("%.1f",t.getHealth())+" &7| Food: &f"+t.getFoodLevel()+" &7| XP: &f"+t.getLevel()+" &7| Mode: &f"+t.getGameMode()+" &7| World: &f"+t.getWorld().getName()));}
-        else if(s==12)p.openInventory(t.getInventory());
-        else if(s==13){heal(t);done(p,"Heal Me");}
-        else if(s==14)confirm(p,Action.CLEAR_INV);
-        else if(s==15){p.teleport(t.getLocation());done(p,"Teleport To");openPlayerManager(p);}
-        else if(s==16){if(frozen.contains(t.getUniqueId())){frozen.remove(t.getUniqueId());done(p,"Unfreeze");}else{frozen.add(t.getUniqueId());done(p,"Freeze");}openPlayerManager(p);}
-        else if(s==15){p.teleport(t.getLocation());done(p,"Teleport To");openPlayerManager(p);}
-        else if(s==16){if(frozen.contains(t.getUniqueId())){frozen.remove(t.getUniqueId());done(p,"Unfreeze");}else{frozen.add(t.getUniqueId());done(p,"Freeze");}openPlayerManager(p);}
-    }
-
     private void openGamemode(Player p){openNativeOptions(p,"gamemode","Gamemode",Map.of(10,"Survival",11,"Creative",12,"Adventure",13,"Spectator",15,"Back"));}
     private void gamemode(Player p,int s){Player t=target(p);if(s==17){openMain(p);return;}if(t==null)return;GameMode g=s==10?GameMode.SURVIVAL:s==11?GameMode.CREATIVE:s==12?GameMode.ADVENTURE:s==13?GameMode.SPECTATOR:null;if(g!=null){t.setGameMode(g);done(p,"Gamemode");openMain(p);}}
 
@@ -460,18 +392,6 @@ public final class StaffGui implements Listener {
                 .type(DialogType.multiAction(actions).columns(2).build()));
         p.showDialog(dialog);
     }
-    private void worlds(Player p,int s,boolean rightClick){if(s==50){openMain(p);return;}if(s==49){if(!p.hasPermission("voidflame.staff.world"))return;String n="StaffWorld_"+System.currentTimeMillis()%10000;try { Object core=AdminServices.coreWorlds(); World w=AdminServices.loadWorld(core,n); if(w!=null)p.teleport(w.getSpawnLocation()); done(p,"World Created"); } catch(Exception ex){ msg(p,"world-operation-failed"); } return;}ItemStack x=p.getOpenInventory().getTopInventory().getItem(s);if(x==null||x.getItemMeta()==null)return;String n=ChatColor.stripColor(x.getItemMeta().getDisplayName());World w=Bukkit.getWorld(n);if(w==null)return;
-        if(rightClick){
-            if(!p.hasPermission("voidflame.staff.world")){msg(p,"no-permission");return;}
-            if(w.getPlayers().stream().anyMatch(player->!player.equals(p))){msg(p,"world-has-players");return;}
-            if(w.equals(p.getWorld())){msg(p,"cannot-remove-current-world");return;}
-            Bukkit.unloadWorld(w,false);
-            java.io.File folder=w.getWorldFolder();
-            deleteFolder(folder);
-            done(p,"World Removed");
-            openWorlds(p);
-        }else p.teleport(w.getSpawnLocation());
-    }
     private void deleteFolder(java.io.File f){
         if(!f.exists())return;
         java.io.File[] children=f.listFiles();
@@ -505,5 +425,4 @@ public final class StaffGui implements Listener {
     private void msg(Player p,String k){p.sendMessage(color(plugin.getConfig().getString("messages."+k,k)));}
     private String color(String s){return ChatColor.translateAlternateColorCodes('&',s==null?"":s);}
 
-    static final class Holder implements InventoryHolder {final String type;Holder(String type){this.type=type;}public Inventory getInventory(){return null;}}
 }
