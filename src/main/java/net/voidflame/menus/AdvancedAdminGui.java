@@ -10,18 +10,12 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -238,15 +232,6 @@ public final class AdvancedAdminGui implements Listener {
                 DialogAction.commandTemplate(command));
     }
 
-    @EventHandler public void click(InventoryClickEvent e) {
-        if (!(e.getWhoClicked() instanceof Player p)) return;
-        if (!(e.getView().getTopInventory().getHolder() instanceof Holder h)) return;
-        e.setCancelled(true);
-        if (!AdminAccess.hasAdminAccess(p)) { p.sendMessage(color("&cJava staff only.")); p.closeInventory(); return; }
-        if (e.getClickedInventory() != e.getView().getTopInventory()) return;
-        dialogClick(p, h.type, e.getRawSlot());
-    }
-
     public void dialogClick(Player p, String t, int s) {
         if (!AdminAccess.hasAdminAccess(p)) { p.sendMessage(color("&cJava staff only.")); return; }
         if (s >= 100 && (t.startsWith("punish-select:") || t.equals("history-select") || t.equals("player-manager") || t.equals("backups"))) s -= 100;
@@ -312,8 +297,6 @@ public final class AdvancedAdminGui implements Listener {
         openSecurity(p);
     }
 
-    @EventHandler public void drag(InventoryDragEvent e){if(e.getView().getTopInventory().getHolder() instanceof Holder)e.setCancelled(true);}
-
     @EventHandler public void chat(AsyncPlayerChatEvent e) {
         PendingInput req=input.get(e.getPlayer().getUniqueId()); if(req==null)return;
         e.setCancelled(true);
@@ -325,13 +308,9 @@ public final class AdvancedAdminGui implements Listener {
     }
 
     private List<Player> sortedPlayers(){List<Player> p=new ArrayList<>(Bukkit.getOnlinePlayers());p.sort(Comparator.comparing(Player::getName,String.CASE_INSENSITIVE_ORDER));return p;}
-    private Inventory gui(String type,String title){return Bukkit.createInventory(new Holder(type),54,color(title));}
-    private void button(Inventory i,int s,Material m,String n,String... l){if(s<i.getSize())i.setItem(s,item(m,n,l));}
-    private ItemStack item(Material m,String n,String... l){ItemStack i=new ItemStack(m);ItemMeta md=i.getItemMeta();if(md!=null){md.setDisplayName(color(n));md.setLore(Arrays.stream(l).map(this::color).toList());i.setItemMeta(md);}return i;}
     private String color(String s){return ChatColor.translateAlternateColorCodes('&',s==null?"":s);}
     private long num(List<Map<String,Object>> r){return r.isEmpty()?0:((Number)r.get(0).values().iterator().next()).longValue();}
     private double value(List<Map<String,Object>> r,String k){return r.isEmpty()?0:((Number)r.get(0).getOrDefault(k,0)).doubleValue();}
     private record PendingInput(String action,UUID target,String duration,long createdAt){}
     private record Analytics(double players,double matches,double elo,double wins,double losses,String topKit,String topPlayer){}
-    static final class Holder implements InventoryHolder {final String type;Holder(String type){this.type=type;}public Inventory getInventory(){return null;}}
 }
