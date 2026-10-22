@@ -132,6 +132,17 @@ public final class StaffGui implements Listener {
         p.showDialog(dialog);
     }
 
+    public void viewInventory(Player viewer, String rawId, boolean enderChest) {
+        if (!require(viewer, "voidflame.staff.manage")) return;
+        try {
+            Player target = Bukkit.getPlayer(UUID.fromString(rawId));
+            if (target == null) { viewer.sendMessage(color("&cThat player is no longer online.")); openPlayers(viewer); return; }
+            showInventoryDialog(viewer, target, enderChest);
+        } catch (IllegalArgumentException ex) {
+            viewer.sendMessage(color("&cInvalid player identifier."));
+        }
+    }
+
     private void showInventoryDialog(Player viewer, Player target, boolean enderChest) {
         if (!AdminAccess.hasStaffAccess(viewer) || !require(viewer, "voidflame.staff.manage")) return;
         ItemStack[] contents = enderChest ? target.getEnderChest().getContents() : target.getInventory().getStorageContents();
@@ -160,7 +171,7 @@ public final class StaffGui implements Listener {
         if (!found) body.add(DialogBody.plainMessage(Component.text("No items in this inventory.", NamedTextColor.GRAY), 300));
         List<ActionButton> actions = List.of(
                 staffButton("Refresh", "Refresh the displayed inventory.", "/staffgui viewinventory " + target.getUniqueId() + (enderChest ? " ender" : " player"), NamedTextColor.AQUA),
-                staffButton("Back", "Return to Player Manager.", "/staffgui player", NamedTextColor.GRAY));
+                staffButton("Back", "Return to Player Manager.", "/staffgui players", NamedTextColor.GRAY));
         Dialog dialog = Dialog.create(builder -> builder.empty()
                 .base(DialogBase.builder(Component.text("Inventory • " + target.getName(), NamedTextColor.WHITE))
                         .externalTitle(Component.text("Staff", NamedTextColor.AQUA)).canCloseWithEscape(true)
