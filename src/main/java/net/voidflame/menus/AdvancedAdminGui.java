@@ -249,7 +249,12 @@ public final class AdvancedAdminGui implements Listener {
 
     public void dialogClick(Player p, String t, int s) {
         if (!AdminAccess.hasAdminAccess(p)) { p.sendMessage(color("&cJava staff only.")); return; }
-    if (s==49) { new AdminMenu(plugin).open(p); return; }
+    if (s==49) {
+        if (t.startsWith("punish-select:") || t.startsWith("duration:")) { openPunishments(p); return; }
+        if (t.startsWith("player-actions:")) { openPlayerManager(p); return; }
+        if (t.equals("backups") || t.startsWith("restore:")) { openBackups(p); return; }
+        new AdminMenu(plugin).open(p); return;
+    }
     if (t.equals("punishments")) {
         if(s==10)openPlayerSelect(p,"ban"); else if(s==12)openPlayerSelect(p,"mute"); else if(s==14)openPlayerSelect(p,"warn"); else if(s==16)openPlayerSelect(p,"kick"); else if(s==28)openHistory(p); else if(s==30)openPlayerSelect(p,"unpunish");
     } else if(t.startsWith("punish-select:")) {
@@ -280,8 +285,18 @@ public final class AdvancedAdminGui implements Listener {
         if(s==47){AdminServices.backup().whenComplete((v,e2)->Bukkit.getScheduler().runTask(plugin,()->{p.sendMessage(color(e2==null?"&aBackup created.":"&cBackup failed: "+e2.getMessage()));openBackups(p);}));}
         else {List<Path> bs=AdminServices.backups();if(s>=0&&s<bs.size())confirmRestore(p,bs.get(s));}
     } else if(t.startsWith("restore:")) {
-        if(s==20){Path b=Path.of(t.substring("restore:".length()));AdminServices.restore(b).whenComplete((v,e2)->Bukkit.getScheduler().runTask(plugin,()->{p.sendMessage(color(e2==null?"&aRestore completed. A safety backup was made first.":"&cRestore failed: "+e2.getMessage()));openBackups(p);}));}
-        else if(s==24)openBackups(p);
+        if (s == 20) {
+            try {
+                int index = Integer.parseInt(t.substring("restore:".length()));
+                List<Path> bs = AdminServices.backups();
+                if (index < 0 || index >= bs.size()) { p.sendMessage(color("&cBackup is no longer available.")); openBackups(p); return; }
+                Path backup = bs.get(index);
+                AdminServices.restore(backup).whenComplete((v,e2)->Bukkit.getScheduler().runTask(plugin,()->{
+                    p.sendMessage(color(e2==null?"&aRestore completed. A safety backup was made first.":"&cRestore failed: "+e2.getMessage()));
+                    openBackups(p);
+                }));
+            } catch (NumberFormatException ex) { p.sendMessage(color("&cInvalid backup selection.")); openBackups(p); }
+        } else if (s == 24) openBackups(p);
     }
     }
 
