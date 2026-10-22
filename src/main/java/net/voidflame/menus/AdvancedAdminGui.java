@@ -51,7 +51,7 @@ public final class AdvancedAdminGui implements Listener {
         List<Player> players = sortedPlayers();
         for (int i = 0; i < Math.min(players.size(), 78); i++) {
             Player target = players.get(i);
-            buttons.add(action(target.getName(), "Select " + target.getName() + ".", "/vfadmin advclick punish-select:" + action + " " + i, NamedTextColor.AQUA));
+            buttons.add(action(target.getName(), "Select " + target.getName() + ".", "/vfadmin advclick punish-select:" + action + " " + (i + 100), NamedTextColor.AQUA));
         }
         buttons.add(action("Back", "Return to punishments.", "/vfadmin advclick punishments 49", NamedTextColor.GRAY));
         showDialog(staff, action.toUpperCase(Locale.ROOT) + " • Player", "Choose an online player.", buttons);
@@ -90,7 +90,7 @@ public final class AdvancedAdminGui implements Listener {
         List<Player> players = sortedPlayers();
         for (int i = 0; i < Math.min(players.size(), 78); i++) {
             Player target = players.get(i);
-            buttons.add(action(target.getName(), "View recent punishment history.", "/vfadmin advclick history-select " + i, NamedTextColor.AQUA));
+            buttons.add(action(target.getName(), "View recent punishment history.", "/vfadmin advclick history-select " + (i + 100), NamedTextColor.AQUA));
         }
         buttons.add(action("Back", "Return to punishments.", "/vfadmin punishments", NamedTextColor.GRAY));
         showDialog(staff, "Punishment History", "Select an online player.", buttons);
@@ -101,7 +101,7 @@ public final class AdvancedAdminGui implements Listener {
         List<Player> players = sortedPlayers();
         for (int i = 0; i < Math.min(players.size(), 78); i++) {
             Player target = players.get(i);
-            buttons.add(action(target.getName(), "Open player management.", "/vfadmin advclick player-manager " + i, NamedTextColor.AQUA));
+            buttons.add(action(target.getName(), "Open player management.", "/vfadmin advclick player-manager " + (i + 100), NamedTextColor.AQUA));
         }
         buttons.add(action("Back", "Return to Staff.", "/vfadmin", NamedTextColor.GRAY));
         showDialog(p, "Player Manager", "Select an online player.", buttons);
@@ -147,7 +147,7 @@ public final class AdvancedAdminGui implements Listener {
         List<Path> backups = AdminServices.backups();
         for (int i = 0; i < Math.min(backups.size(), 70); i++) {
             Path backup = backups.get(i);
-            buttons.add(action(backup.getFileName().toString(), "Review restore options for this backup.", "/vfadmin advclick backups " + i, NamedTextColor.GOLD));
+            buttons.add(action(backup.getFileName().toString(), "Review restore options for this backup.", "/vfadmin advclick backups " + (i + 100), NamedTextColor.GOLD));
         }
         buttons.add(action("Create Backup", "Create a validated database backup.", "/vfadmin advclick backups 47", NamedTextColor.GREEN));
         buttons.add(action("Back", "Return to Staff.", "/vfadmin", NamedTextColor.GRAY));
@@ -249,6 +249,7 @@ public final class AdvancedAdminGui implements Listener {
 
     public void dialogClick(Player p, String t, int s) {
         if (!AdminAccess.hasAdminAccess(p)) { p.sendMessage(color("&cJava staff only.")); return; }
+        if (s >= 100 && (t.startsWith("punish-select:") || t.equals("history-select") || t.equals("player-manager") || t.equals("backups"))) s -= 100;
     if (s==49) {
         if (t.startsWith("punish-select:") || t.startsWith("duration:")) { openPunishments(p); return; }
         if (t.startsWith("player-actions:")) { openPlayerManager(p); return; }
