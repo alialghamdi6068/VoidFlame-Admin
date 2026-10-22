@@ -154,7 +154,12 @@ final class PunishmentService implements Listener {
 
     private CompletableFuture<Void> insert(UUID targetId, String targetName, Player actor, String type, String reason, long expiresAfter) {
         long now = System.currentTimeMillis();
-        long expires = expiresAfter <= 0 ? 0L : now + expiresAfter;
+        final long expires;
+        try {
+            expires = expiresAfter <= 0 ? 0L : Math.addExact(now, expiresAfter);
+        } catch (ArithmeticException overflow) {
+            return CompletableFuture.failedFuture(new IllegalArgumentException("Punishment duration exceeds the supported range.", overflow));
+        }
         return update("INSERT INTO punishments(uuid,type,actor_uuid,actor_name,reason,created_at,expires_at,active) VALUES(?,?,?,?,?,?,?,1)",
                 targetId.toString(), type, actor.getUniqueId().toString(), actor.getName(), reason, now, expires == 0L ? null : expires);
     }
@@ -268,16 +273,21 @@ final class PunishmentService implements Listener {
     private record PendingPunishment(String[] args, long createdAt) {}
 
     private long parseDuration(String token) {
+        if (token == null || token.length() < 2) return -1L;
         try {
             long value = Long.parseLong(token.substring(0, token.length() - 1));
-            return switch (Character.toLowerCase(token.charAt(token.length() - 1))) {
-                case 's' -> value * 1000L;
-                case 'm' -> value * 60_000L;
-                case 'h' -> value * 3_600_000L;
-                case 'd' -> value * 86_400_000L;
+            if (value <= 0L) return -1L;
+            long multiplier = switch (Character.toLowerCase(token.charAt(token.length() - 1))) {
+                case 's' -> 1_000L;
+                case 'm' -> 60_000L;
+                case 'h' -> 3_600_000L;
+                case 'd' -> 86_400_000L;
                 default -> -1L;
             };
-        } catch (Exception e) { return -1L; }
+            return multiplier < 0L ? -1L : Math.multiplyExact(value, multiplier);
+        } catch (ArithmeticException | NumberFormatException e) {
+            return -1L;
+        }
     }
 
     @SuppressWarnings("unchecked")
