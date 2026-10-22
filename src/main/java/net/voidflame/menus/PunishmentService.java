@@ -208,22 +208,35 @@ final class PunishmentService implements Listener {
     private void loadActivePunishments() {
         query("SELECT uuid,type FROM punishments WHERE active=1 AND (expires_at IS NULL OR expires_at=0 OR expires_at>?)",
                 System.currentTimeMillis()).thenAccept(rows -> {
-            banned.clear();
-            muted.clear();
+            Set<UUID> nextBanned = ConcurrentHashMap.newKeySet();
+            Set<UUID> nextMuted = ConcurrentHashMap.newKeySet();
             for (Map<String,Object> row : rows) {
                 try {
                     UUID id = UUID.fromString(String.valueOf(row.get("uuid")));
                     String type = String.valueOf(row.get("type"));
-                    if (type.equals("BAN") || type.equals("TEMPBAN")) banned.add(id);
-                    if (type.equals("MUTE") || type.equals("TEMPMUTE")) muted.add(id);
+                    if (type.equals("BAN") || type.equals("TEMPBAN")) nextBanned.add(id);
+                    if (type.equals("MUTE") || type.equals("TEMPMUTE")) nextMuted.add(id);
                 } catch (IllegalArgumentException ignored) {}
             }
+            // Replace cached punishments only after a successful database read.
+            // A storage outage must never silently clear active bans or mutes.
+            banned.clear();
+            banned.addAll(nextBanned);
+            muted.clear();
+            muted.addAll(nextMuted);
+        }).exceptionally(error -> {
+            plugin.getLogger().severe("Could not refresh active punishments; retaining last known cache: " + error.getMessage());
+            return null;
         });
     }
 
     private void refreshActivePunishments() {
         query("UPDATE punishments SET active=0 WHERE active=1 AND expires_at IS NOT NULL AND expires_at>0 AND expires_at<=?",
-                System.currentTimeMillis()).thenRun(this::loadActivePunishments);
+                System.currentTimeMillis()).thenRun(this::loadActivePunishments)
+                .exceptionally(error -> {
+                    plugin.getLogger().warning("Could not expire punishments: " + error.getMessage());
+                    return null;
+                });
     }
 
     @EventHandler
@@ -270,12 +283,13 @@ final class PunishmentService implements Listener {
     @SuppressWarnings("unchecked")
     private CompletableFuture<List<Map<String,Object>>> query(String sql, Object... params) {
         Object provider = storage == null ? resolveStorage() : storage;
-        if (provider == null) return CompletableFuture.completedFuture(List.of());
+        if (provider == null) return CompletableFuture.failedFuture(
+                new IllegalStateException("VoidFlame-Core storage service is unavailable."));
         try {
             Method m = provider.getClass().getMethod("query", String.class, Object[].class);
             return (CompletableFuture<List<Map<String,Object>>>) m.invoke(provider, sql, params);
         } catch (Exception e) {
-            return CompletableFuture.completedFuture(List.of());
+            return CompletableFuture.failedFuture(new IllegalStateException("Punishment database query failed.", e));
         }
     }
 
