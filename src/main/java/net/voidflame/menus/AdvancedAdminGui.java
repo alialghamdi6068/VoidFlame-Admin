@@ -107,8 +107,8 @@ public final class AdvancedAdminGui implements Listener {
                 "UUID: " + target.getUniqueId() + " • World: " + target.getWorld().getName()
                         + " • Health: " + String.format(Locale.ROOT, "%.1f", target.getHealth()) + " • Ping: " + target.getPing(),
                 List.of(action("Core Info", "Show player details.", "/vfadmin advclick " + type + " 10", NamedTextColor.AQUA),
-                        action("Open Inventory", "Open and edit live inventory.", "/vfadmin advclick " + type + " 12", NamedTextColor.GOLD),
-                        action("Ender Chest", "Open and edit ender chest.", "/vfadmin advclick " + type + " 14", NamedTextColor.LIGHT_PURPLE),
+                        action("View Inventory", "Inspect the live inventory contents.", "/vfadmin advclick " + type + " 12", NamedTextColor.GOLD),
+                        action("View Ender Chest", "Inspect the ender chest contents.", "/vfadmin advclick " + type + " 14", NamedTextColor.LIGHT_PURPLE),
                         action("Teleport To", "Teleport yourself to the player.", "/vfadmin advclick " + type + " 16", NamedTextColor.GREEN),
                         action("Teleport Here", "Teleport the player to you.", "/vfadmin advclick " + type + " 28", NamedTextColor.YELLOW),
                         action("Spectate", "Follow target in spectator mode.", "/vfadmin advclick " + type + " 30", NamedTextColor.BLUE),
