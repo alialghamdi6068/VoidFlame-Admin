@@ -152,6 +152,21 @@ public final class StaffGui implements Listener {
         switch (normalized) {
             case "main" -> openMain(p);
             case "players" -> openPlayers(p);
+            case "select" -> {
+                if (!p.hasPermission("voidflame.staff.players") || args.length < 2) { msg(p, "no-permission"); return; }
+                try {
+                    UUID selectedId = UUID.fromString(args[1]);
+                    Player selected = Bukkit.getPlayer(selectedId);
+                    if (selected == null) { p.sendMessage(color("&cThat player is no longer online.")); openPlayers(p); return; }
+                    targets.put(p.getUniqueId(), selectedId);
+                    String requested = pendingSection.remove(p.getUniqueId());
+                    if (requested != null) openSection(p, requested);
+                    else openPlayerManager(p);
+                } catch (IllegalArgumentException ex) {
+                    p.sendMessage(color("&cInvalid player selection."));
+                    openPlayers(p);
+                }
+            }
             case "heal" -> main(p, 10);
             case "gamemode" -> main(p, 11);
             case "protection" -> main(p, 12);
@@ -245,10 +260,32 @@ public final class StaffGui implements Listener {
     private void repair(ItemStack x){if(x==null||x.getType().isAir())return;ItemMeta m=x.getItemMeta();if(m instanceof Damageable d){d.setDamage(0);x.setItemMeta(d);}}
     private Player target(Player p){UUID id=targets.get(p.getUniqueId());return id==null?null:Bukkit.getPlayer(id);}
 
-    private void openPlayers(Player p){if(!p.hasPermission("voidflame.staff.players")){msg(p,"no-permission");return;}
-        Inventory i=gui("players",6,"&8Select Player");int slot=0;
-        for(Player t:Bukkit.getOnlinePlayers()){if(slot>=45)break;put(i,slot,Material.PLAYER_HEAD,"&e"+t.getName(),"Click to select this player.");slot++;}
-        put(i,49,Material.ARROW,"&7Back");p.openInventory(i);
+    private void openPlayers(Player p) {
+        if (!AdminAccess.hasStaffAccess(p) || !p.hasPermission("voidflame.staff.players")) {
+            msg(p, "no-permission");
+            return;
+        }
+        List<ActionButton> actions = new ArrayList<>();
+        List<Player> online = new ArrayList<>(Bukkit.getOnlinePlayers());
+        online.sort(Comparator.comparing(Player::getName, String.CASE_INSENSITIVE_ORDER));
+        for (Player target : online) {
+            if (actions.size() >= 80) break;
+            actions.add(staffButton(target.getName(), "Select " + target.getName() + " as the target for the pending staff action.",
+                    "/staffgui select " + target.getUniqueId(), NamedTextColor.AQUA));
+        }
+        actions.add(staffButton("Back to Staff", "Return to the Staff menu.", "/staffgui main", NamedTextColor.GRAY));
+        List<DialogBody> body = List.of(
+                DialogBody.plainMessage(Component.text("PLAYER SELECTION", NamedTextColor.AQUA), 300),
+                DialogBody.plainMessage(Component.text(online.size() + " player(s) online. Select a target; permissions are checked again before actions run.", NamedTextColor.GRAY), 300)
+        );
+        Dialog dialog = Dialog.create(builder -> builder.empty()
+                .base(DialogBase.builder(Component.text("Select Player", NamedTextColor.WHITE))
+                        .externalTitle(Component.text("Staff", NamedTextColor.AQUA))
+                        .canCloseWithEscape(true)
+                        .body(body)
+                        .build())
+                .type(DialogType.multiAction(actions).columns(2).build()));
+        p.showDialog(dialog);
     }
     private void players(Player p,int s){
         if(s==49){openMain(p);return;}ItemStack x=p.getOpenInventory().getTopInventory().getItem(s);
