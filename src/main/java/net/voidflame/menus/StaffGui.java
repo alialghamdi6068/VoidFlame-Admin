@@ -162,6 +162,7 @@ public final class StaffGui implements Listener {
             case "time" -> time(p, slot);
             case "flags" -> flagMenu(p, slot);
             case "confirm" -> confirm(p, slot);
+            case "player" -> playerManagerDialogAction(p, slot);
             default -> openMain(p);
         }
     }
@@ -169,6 +170,61 @@ public final class StaffGui implements Listener {
     private ActionButton staffButton(String label, String tooltip, String command, NamedTextColor color) {
         return ActionButton.create(Component.text(label, color), Component.text(tooltip, NamedTextColor.GRAY),
             180, DialogAction.commandTemplate(command));
+    }
+
+    private void playerManagerDialogAction(Player p, int slot) {
+        Player t = target(p);
+        if (slot == 17) { openMain(p); return; }
+        if (slot == 10) { openPlayers(p); return; }
+        if (t == null) { p.sendMessage(color("&cSelect a target first.")); openPlayers(p); return; }
+        switch (slot) {
+            case 11 -> p.sendMessage(color("&8Health: &f" + String.format(Locale.ROOT, "%.1f", t.getHealth())
+                    + " &7| Food: &f" + t.getFoodLevel() + " &7| XP: &f" + t.getLevel()
+                    + " &7| Mode: &f" + t.getGameMode() + " &7| World: &f" + t.getWorld().getName()));
+            case 12 -> { if (require(p, "voidflame.staff.manage")) p.openInventory(t.getInventory()); }
+            case 13 -> { if (require(p, "voidflame.staff.basic")) { heal(t); done(p, "Heal Target"); openPlayerManager(p); } }
+            case 14 -> { if (require(p, "voidflame.staff.moderate")) confirm(p, Action.CLEAR_INV); }
+            case 15 -> { if (require(p, "voidflame.staff.basic")) { p.teleport(t.getLocation()); done(p, "Teleport To"); openPlayerManager(p); } }
+            case 16 -> { if (require(p, "voidflame.staff.manage")) {
+                if (frozen.contains(t.getUniqueId())) { frozen.remove(t.getUniqueId()); done(p, "Unfreeze"); }
+                else { frozen.add(t.getUniqueId()); done(p, "Freeze"); }
+                openPlayerManager(p);
+            } }
+            default -> openPlayerManager(p);
+        }
+    }
+
+    public void worldDialogAction(Player p, String action, String rawId) {
+        if (!require(p, "voidflame.staff.world")) return;
+        try {
+            UUID id = UUID.fromString(rawId);
+            World w = Bukkit.getWorld(id);
+            if ("create".equalsIgnoreCase(action)) {
+                String name = "StaffWorld_" + System.currentTimeMillis() % 10000;
+                try {
+                    World created = AdminServices.loadWorld(AdminServices.coreWorlds(), name);
+                    if (created != null) p.teleport(created.getSpawnLocation());
+                    done(p, "World Created");
+                } catch (Exception ex) { msg(p, "world-operation-failed"); }
+                openWorlds(p);
+                return;
+            }
+            if (w == null) { p.sendMessage(color("&cWorld is no longer loaded.")); openWorlds(p); return; }
+            if ("tp".equalsIgnoreCase(action)) {
+                p.teleport(w.getSpawnLocation());
+                done(p, "Teleport to World");
+            } else if ("remove".equalsIgnoreCase(action)) {
+                if (w.equals(p.getWorld())) { msg(p, "cannot-remove-current-world"); return; }
+                if (!w.getPlayers().isEmpty()) { msg(p, "world-has-players"); return; }
+                if (!Bukkit.unloadWorld(w, false)) { p.sendMessage(color("&cCould not unload world.")); return; }
+                deleteFolder(w.getWorldFolder());
+                done(p, "World Removed");
+            }
+            openWorlds(p);
+        } catch (IllegalArgumentException ex) {
+            p.sendMessage(color("&cInvalid world identifier."));
+            openWorlds(p);
+        }
     }
 
     public void selectTarget(Player p, String rawId) {
@@ -341,18 +397,15 @@ public final class StaffGui implements Listener {
         }
     }
 
-    private void openPlayerManager(Player p){
-        Inventory i=gui("player",3,"&8Player Manager");
-        Player t=target(p);String n=t==null?"None":t.getName();
-        put(i,10,Material.PLAYER_HEAD,"&e"+n,"Selected player.");
-        put(i,11,Material.BOOK,"&bStats","Health, food, XP, mode, location.");
-        put(i,12,Material.CHEST,"&6Inventory","Open target inventory.");
-        put(i,13,Material.GOLDEN_APPLE,"&6Heal Me","Restore target.");
-        put(i,14,Material.CROSSBOW,"&cClear Inventory","Clear target inventory.");
-        put(i,15,Material.ENDER_PEARL,"&bTeleport To","Teleport yourself to target.");
-        put(i,16,Material.PACKED_ICE,t!=null && frozen.contains(t.getUniqueId())?"&aUnfreeze":"&cFreeze","Prevent target movement.");
-        put(i,17,Material.ARROW,"&7Back");
-        p.openInventory(i);
+    private void openPlayerManager(Player p) {
+        if (!require(p, "voidflame.staff.players")) return;
+        Player t = target(p);
+        String n = t == null ? "No target selected" : "Selected: " + t.getName();
+        openNativeOptions(p, "player", "Player Manager • " + n, Map.of(
+                10, "Select Player", 11, "View Player Stats", 12, "Open Target Inventory",
+                13, "Heal Target", 14, "Clear Target Inventory", 15, "Teleport To Target",
+                16, t != null && frozen.contains(t.getUniqueId()) ? "Unfreeze Target" : "Freeze Target",
+                17, "Back to Staff"));
     }
     private void playerManager(Player p,int s){
         Player t=target(p);if(s==17){openMain(p);return;}if(t==null){openPlayers(p);return;}
@@ -386,7 +439,27 @@ public final class StaffGui implements Listener {
     private void openServer(Player p){if(!require(p,"voidflame.staff.server"))return;openNativeOptions(p,"server","Server Manager",Map.of(10,"Reload Admin Configuration",11,"Stop Server",12,"Whitelist: "+(Bukkit.hasWhitelist()?"Enabled":"Disabled"),15,"Back"));}
     private void server(Player p,int s){if(s==15){openMain(p);return;}if(!p.hasPermission("voidflame.staff.server")){msg(p,"no-permission");return;}if(s==10){plugin.reloadConfig();loadState();done(p,"Reload Admin Configuration");openMain(p);}else if(s==11)confirm(p,Action.STOP);else if(s==12){Bukkit.setWhitelist(!Bukkit.hasWhitelist());done(p,"Whitelist");openServer(p);}}
 
-    private void openWorlds(Player p){if(!p.hasPermission("voidflame.staff.world")){msg(p,"no-permission");return;}Inventory i=gui("world",6,"&8World Manager");int s=0;for(World w:Bukkit.getWorlds()){if(s>=45)break;put(i,s,Material.GRASS_BLOCK,"&a"+w.getName(),"Left: teleport | Right: remove");s++;}put(i,49,Material.ENDER_PEARL,"&bCreate World","Creates StaffWorld_N.");put(i,50,Material.ARROW,"&7Back");p.openInventory(i);}
+    private void openWorlds(Player p) {
+        if (!require(p, "voidflame.staff.world")) return;
+        List<ActionButton> actions = new ArrayList<>();
+        List<World> worlds = new ArrayList<>(Bukkit.getWorlds());
+        worlds.sort(Comparator.comparing(World::getName, String.CASE_INSENSITIVE_ORDER));
+        for (World w : worlds) {
+            if (actions.size() >= 74) break;
+            actions.add(staffButton("Teleport: " + w.getName(), "Teleport to this world's spawn.", "/staffgui worldtp " + w.getUID(), NamedTextColor.GREEN));
+            if (actions.size() < 78) actions.add(staffButton("Unload: " + w.getName(), "Unload and delete this world. This is destructive.", "/staffgui worldremove " + w.getUID(), NamedTextColor.RED));
+        }
+        actions.add(staffButton("Create World", "Create a new managed staff world.", "/staffgui worldcreate", NamedTextColor.AQUA));
+        actions.add(staffButton("Back", "Return to Staff.", "/staffgui main", NamedTextColor.GRAY));
+        Dialog dialog = Dialog.create(builder -> builder.empty()
+                .base(DialogBase.builder(Component.text("World Manager", NamedTextColor.WHITE))
+                        .externalTitle(Component.text("Staff", NamedTextColor.AQUA)).canCloseWithEscape(true)
+                        .body(List.of(DialogBody.plainMessage(Component.text("World administration", NamedTextColor.AQUA), 300),
+                                DialogBody.plainMessage(Component.text("Teleport and removal are separate actions. Removing a world deletes its folder.", NamedTextColor.GRAY), 300)))
+                        .build())
+                .type(DialogType.multiAction(actions).columns(2).build()));
+        p.showDialog(dialog);
+    }
     private void worlds(Player p,int s,boolean rightClick){if(s==50){openMain(p);return;}if(s==49){if(!p.hasPermission("voidflame.staff.world"))return;String n="StaffWorld_"+System.currentTimeMillis()%10000;try { Object core=AdminServices.coreWorlds(); World w=AdminServices.loadWorld(core,n); if(w!=null)p.teleport(w.getSpawnLocation()); done(p,"World Created"); } catch(Exception ex){ msg(p,"world-operation-failed"); } return;}ItemStack x=p.getOpenInventory().getTopInventory().getItem(s);if(x==null||x.getItemMeta()==null)return;String n=ChatColor.stripColor(x.getItemMeta().getDisplayName());World w=Bukkit.getWorld(n);if(w==null)return;
         if(rightClick){
             if(!p.hasPermission("voidflame.staff.world")){msg(p,"no-permission");return;}
