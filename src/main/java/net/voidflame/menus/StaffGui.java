@@ -133,6 +133,39 @@ public final class StaffGui implements Listener {
         p.showDialog(dialog);
     }
 
+    private void openNativeOptions(Player p, String type, String title, Map<Integer, String> options) {
+        if (!AdminAccess.hasStaffAccess(p)) { msg(p, "no-permission"); return; }
+        List<ActionButton> actions = new ArrayList<>();
+        options.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry ->
+                actions.add(staffButton(entry.getValue(), "Select " + entry.getValue() + ".", "/staffgui action " + type + " " + entry.getKey(), entry.getKey() == 15 || entry.getKey() == 17 ? NamedTextColor.GRAY : NamedTextColor.AQUA)));
+        Dialog dialog = Dialog.create(builder -> builder.empty()
+                .base(DialogBase.builder(Component.text(title, NamedTextColor.WHITE))
+                        .externalTitle(Component.text("Staff", NamedTextColor.AQUA))
+                        .canCloseWithEscape(true)
+                        .body(List.of(
+                                DialogBody.plainMessage(Component.text("VOIDFLAME STAFF TOOLS", NamedTextColor.AQUA), 300),
+                                DialogBody.plainMessage(Component.text("Choose an action. Server-side permission checks remain active.", NamedTextColor.GRAY), 300)))
+                        .build())
+                .type(DialogType.multiAction(actions).columns(2).build()));
+        p.showDialog(dialog);
+    }
+
+    public void dialogAction(Player p, String type, int slot) {
+        if (!AdminAccess.hasStaffAccess(p)) { msg(p, "no-permission"); return; }
+        switch (type.toLowerCase(Locale.ROOT)) {
+            case "gamemode" -> gamemode(p, slot);
+            case "speed" -> speed(p, slot);
+            case "potions" -> potions(p, slot);
+            case "xp" -> xp(p, slot);
+            case "armor" -> armorMenu(p, slot);
+            case "server" -> server(p, slot);
+            case "time" -> time(p, slot);
+            case "flags" -> flagMenu(p, slot);
+            case "confirm" -> confirm(p, slot);
+            default -> openMain(p);
+        }
+    }
+
     private ActionButton staffButton(String label, String tooltip, String command, NamedTextColor color) {
         return ActionButton.create(Component.text(label, color), Component.text(tooltip, NamedTextColor.GRAY),
             180, DialogAction.commandTemplate(command));
@@ -334,23 +367,23 @@ public final class StaffGui implements Listener {
         else if(s==16){if(frozen.contains(t.getUniqueId())){frozen.remove(t.getUniqueId());done(p,"Unfreeze");}else{frozen.add(t.getUniqueId());done(p,"Freeze");}openPlayerManager(p);}
     }
 
-    private void openGamemode(Player p){Inventory i=gui("gamemode",3,"&8Gamemode");put(i,10,Material.GRASS_BLOCK,"&aSurvival");put(i,11,Material.COMMAND_BLOCK,"&bCreative");put(i,12,Material.FEATHER,"&eAdventure");put(i,13,Material.ENDER_EYE,"&3Spectator");put(i,15,Material.ARROW,"&7Back");p.openInventory(i);}
+    private void openGamemode(Player p){openNativeOptions(p,"gamemode","Gamemode",Map.of(10,"Survival",11,"Creative",12,"Adventure",13,"Spectator",15,"Back"));}
     private void gamemode(Player p,int s){Player t=target(p);if(s==17){openMain(p);return;}if(t==null)return;GameMode g=s==10?GameMode.SURVIVAL:s==11?GameMode.CREATIVE:s==12?GameMode.ADVENTURE:s==13?GameMode.SPECTATOR:null;if(g!=null){t.setGameMode(g);done(p,"Gamemode");openMain(p);}}
 
-    private void openSpeed(Player p){Inventory i=gui("speed",3,"&8Speed Controls");put(i,10,Material.SUGAR,"&fWalk Speed","Click to increase; wraps at max.");put(i,11,Material.FEATHER,"&fFly Speed","Click to increase; wraps at max.");put(i,12,Material.REDSTONE,"&7Reset Speeds");put(i,15,Material.ARROW,"&7Back");p.openInventory(i);}
+    private void openSpeed(Player p){openNativeOptions(p,"speed","Speed Controls",Map.of(10,"Increase Walk Speed",11,"Increase Fly Speed",12,"Reset Speeds",15,"Back"));}
     private void speed(Player p,int s){Player t=target(p);if(s==15){openMain(p);return;}if(t==null)return;float step=(float)plugin.getConfig().getDouble("settings.speed-step",0.1),max=(float)plugin.getConfig().getDouble("settings.max-speed",1.0);if(s==10)t.setWalkSpeed(next(t.getWalkSpeed(),step,max));else if(s==11)t.setFlySpeed(next(t.getFlySpeed(),step,max));else if(s==12){t.setWalkSpeed(0.2f);t.setFlySpeed(0.1f);}done(p,"Speed");openMain(p);}
     private float next(float cur,float step,float max){return cur>=max-0.001?0.1f:Math.min(max,cur+step);}
 
-    private void openPotions(Player p){Inventory i=gui("potions",3,"&8Potion Effects");put(i,10,Material.SUGAR,"&aSpeed II","2 minutes");put(i,11,Material.IRON_CHESTPLATE,"&cResistance II","2 minutes");put(i,12,Material.FEATHER,"&bJump Boost II","2 minutes");put(i,13,Material.GLOWSTONE_DUST,"&eHaste II","2 minutes");put(i,14,Material.MILK_BUCKET,"&fClear Effects");put(i,15,Material.ARROW,"&7Back");p.openInventory(i);}
+    private void openPotions(Player p){openNativeOptions(p,"potions","Potion Effects",Map.of(10,"Speed II • 2 minutes",11,"Resistance II • 2 minutes",12,"Jump Boost II • 2 minutes",13,"Haste II • 2 minutes",14,"Clear Effects",15,"Back"));}
     private void potions(Player p,int s){Player t=target(p);if(s==15){openMain(p);return;}if(t==null)return;PotionEffectType type=s==10?PotionEffectType.SPEED:s==11?PotionEffectType.RESISTANCE:s==12?PotionEffectType.JUMP_BOOST:s==13?PotionEffectType.HASTE:null;if(type!=null)t.addPotionEffect(new PotionEffect(type,2400,1,true,false,true));else if(s==14)t.clearActivePotionEffects();done(p,"Potion Effects");openPotions(p);}
 
-    private void openXp(Player p){Inventory i=gui("xp",3,"&8Experience Manager");put(i,10,Material.EXPERIENCE_BOTTLE,"&a+5 Levels");put(i,11,Material.REDSTONE,"&c-5 Levels");put(i,12,Material.BARRIER,"&fReset XP");put(i,13,Material.ENCHANTING_TABLE,"&b+1000 XP");put(i,15,Material.ARROW,"&7Back");p.openInventory(i);}
+    private void openXp(Player p){openNativeOptions(p,"xp","Experience Manager",Map.of(10,"Add 5 Levels",11,"Remove 5 Levels",12,"Reset XP",13,"Add 1000 XP",15,"Back"));}
     private void xp(Player p,int s){Player t=target(p);if(s==15){openMain(p);return;}if(t==null)return;if(s==10)t.giveExpLevels(5);else if(s==11)t.giveExpLevels(-5);else if(s==12){t.setExp(0);t.setLevel(0);t.setTotalExperience(0);}else if(s==13)t.giveExp(1000);done(p,"Experience Manager");openXp(p);}
 
-    private void openArmor(Player p){Inventory i=gui("armor",3,"&8Armor Creator");put(i,10,Material.IRON_CHESTPLATE,"&7Iron Armor");put(i,11,Material.DIAMOND_CHESTPLATE,"&bDiamond Armor");put(i,12,Material.NETHERITE_CHESTPLATE,"&3Netherite Armor");put(i,13,Material.ENCHANTED_BOOK,"&bEnchanted Netherite","Protection IV + Unbreaking III");put(i,15,Material.ARROW,"&7Back");p.openInventory(i);}
+    private void openArmor(Player p){openNativeOptions(p,"armor","Armor Creator",Map.of(10,"Iron Armor",11,"Diamond Armor",12,"Netherite Armor",13,"Enchanted Netherite • Protection IV",15,"Back"));}
     private void armorMenu(Player p,int s){Player t=target(p);if(s==15){openMain(p);return;}if(t==null)return;Material base=s==10?Material.IRON_CHESTPLATE:s==11?Material.DIAMOND_CHESTPLATE:Material.NETHERITE_CHESTPLATE;if(s==13)base=Material.NETHERITE_CHESTPLATE;Material h=base==Material.IRON_CHESTPLATE?Material.IRON_HELMET:base==Material.DIAMOND_CHESTPLATE?Material.DIAMOND_HELMET:Material.NETHERITE_HELMET;Material l=base==Material.IRON_CHESTPLATE?Material.IRON_LEGGINGS:base==Material.DIAMOND_CHESTPLATE?Material.DIAMOND_LEGGINGS:Material.NETHERITE_LEGGINGS;Material b=base==Material.IRON_CHESTPLATE?Material.IRON_BOOTS:base==Material.DIAMOND_CHESTPLATE?Material.DIAMOND_BOOTS:Material.NETHERITE_BOOTS;ItemStack[] set={new ItemStack(b),new ItemStack(l),new ItemStack(base),new ItemStack(h)};for(ItemStack x:set)if(s==13){x.addUnsafeEnchantment(Enchantment.PROTECTION,4);x.addUnsafeEnchantment(Enchantment.UNBREAKING,3);}t.getInventory().setArmorContents(set);done(p,"Armor Creator");openMain(p);}
 
-    private void openServer(Player p){if(!p.hasPermission("voidflame.staff.server")){msg(p,"no-permission");return;}Inventory i=gui("server",3,"&8Server Manager");put(i,10,Material.REDSTONE,"&cReload Server");put(i,11,Material.BARRIER,"&cStop Server");put(i,12,Material.WHITE_WOOL,"&fWhitelist: "+Bukkit.hasWhitelist());put(i,15,Material.ARROW,"&7Back");p.openInventory(i);}
+    private void openServer(Player p){if(!require(p,"voidflame.staff.server"))return;openNativeOptions(p,"server","Server Manager",Map.of(10,"Reload Admin Configuration",11,"Stop Server",12,"Whitelist: "+(Bukkit.hasWhitelist()?"Enabled":"Disabled"),15,"Back"));}
     private void server(Player p,int s){if(s==15){openMain(p);return;}if(!p.hasPermission("voidflame.staff.server")){msg(p,"no-permission");return;}if(s==10){plugin.reloadConfig();loadState();done(p,"Reload Admin Configuration");openMain(p);}else if(s==11)confirm(p,Action.STOP);else if(s==12){Bukkit.setWhitelist(!Bukkit.hasWhitelist());done(p,"Whitelist");openServer(p);}}
 
     private void openWorlds(Player p){if(!p.hasPermission("voidflame.staff.world")){msg(p,"no-permission");return;}Inventory i=gui("world",6,"&8World Manager");int s=0;for(World w:Bukkit.getWorlds()){if(s>=45)break;put(i,s,Material.GRASS_BLOCK,"&a"+w.getName(),"Left: teleport | Right: remove");s++;}put(i,49,Material.ENDER_PEARL,"&bCreate World","Creates StaffWorld_N.");put(i,50,Material.ARROW,"&7Back");p.openInventory(i);}
@@ -373,19 +406,19 @@ public final class StaffGui implements Listener {
         f.delete();
     }
 
-    private void openTime(Player p){Inventory i=gui("time",3,"&8Time / Weather");put(i,10,Material.SUNFLOWER,"&eDay");put(i,11,Material.CLOCK,"&6Noon");put(i,12,Material.CLOCK,"&9Night");put(i,13,Material.WATER_BUCKET,"&bClear Weather");put(i,14,Material.LIGHTNING_ROD,"&cStorm");put(i,15,Material.LODESTONE,"&3Lock/Unlock Time");put(i,16,Material.IRON_BARS,"&3Lock/Unlock Weather");put(i,17,Material.ARROW,"&7Back");p.openInventory(i);}
+    private void openTime(Player p){if(!AdminAccess.hasStaffAccess(p))return;openNativeOptions(p,"time","Time & Weather",Map.of(10,"Day",11,"Noon",12,"Night",13,"Clear Weather",14,"Storm",15,"Toggle Time Lock ("+(lockTime?"On":"Off")+")",16,"Toggle Weather Lock ("+(lockWeather?"On":"Off")+")",17,"Back"));}
     private void time(Player p,int s){if(s==17){openMain(p);return;}if(s==10){lockedTime=1000;}else if(s==11){lockedTime=6000;}else if(s==12){lockedTime=13000;}else if(s==13){storm=false;}else if(s==14){storm=true;}else if(s==15){lockTime=!lockTime;}else if(s==16){lockWeather=!lockWeather;}applyTimeWeather();saveState();done(p,"Time / Weather");openTime(p);}
     private void applyTimeWeather(){for(World w:Bukkit.getWorlds()){if(lockTime)w.setTime(lockedTime);if(lockWeather){w.setStorm(storm);w.setThundering(false);}}}
     private void enforceLocks(){if(lockTime||lockWeather)applyTimeWeather();}
 
-    private void openFlags(Player p){if(!p.hasPermission("voidflame.staff.admin")){msg(p,"no-permission");return;}Inventory i=gui("flags",3,"&8Fast Flags");put(i,10,Material.IRON_SWORD,"&cPvP: "+flags.get("pvp"));put(i,11,Material.OAK_PLANKS,"&aBlock Placement: "+flags.get("block-place"));put(i,12,Material.ZOMBIE_SPAWN_EGG,"&2Mob Spawning: "+flags.get("mob-spawning"));put(i,15,Material.ARROW,"&7Back");p.openInventory(i);}
+    private void openFlags(Player p){if(!require(p,"voidflame.staff.admin"))return;openNativeOptions(p,"flags","Server Flags",Map.of(10,"PvP: "+flags.get("pvp"),11,"Block Placement: "+flags.get("block-place"),12,"Mob Spawning: "+flags.get("mob-spawning"),15,"Back"));}
     private void flagMenu(Player p,int s){if(!p.hasPermission("voidflame.staff.admin")){msg(p,"no-permission");return;}if(s==15){openMain(p);return;}String k=s==10?"pvp":s==11?"block-place":s==12?"mob-spawning":null;if(k!=null){flags.put(k,!flags.get(k));saveState();done(p,"Fast Flag "+k);openFlags(p);}}
 
     @EventHandler public void flags(EntityDamageByEntityEvent e){if(!flags.getOrDefault("pvp",true)&&e.getEntity() instanceof Player&&e.getDamager() instanceof Player)e.setCancelled(true);}
     @EventHandler public void blocks(BlockPlaceEvent e){if(!flags.getOrDefault("block-place",true)&&!e.getPlayer().hasPermission("voidflame.staff"))e.setCancelled(true);}
     @EventHandler public void mobs(CreatureSpawnEvent e){if(!flags.getOrDefault("mob-spawning",true)&&e.getSpawnReason()==CreatureSpawnEvent.SpawnReason.NATURAL)e.setCancelled(true);}
 
-    private void confirm(Player p,Action a){if((a==Action.CLEAR_INV||a==Action.KICK_ALL||a==Action.STOP)&&!p.hasPermission("voidflame.staff.admin")){msg(p,"no-permission");return;}pending.put(p.getUniqueId(),a);confirmations.put(p.getUniqueId(),System.currentTimeMillis()+15000);Inventory i=gui("confirm",3,"&8Confirm Action");put(i,11,Material.LIME_CONCRETE,"&aConfirm");put(i,15,Material.RED_CONCRETE,"&cCancel");p.openInventory(i);}
+    private void confirm(Player p,Action a){if((a==Action.CLEAR_INV||a==Action.KICK_ALL||a==Action.STOP)&&!p.hasPermission("voidflame.staff.admin")){msg(p,"no-permission");return;}pending.put(p.getUniqueId(),a);confirmations.put(p.getUniqueId(),System.currentTimeMillis()+15000);openNativeOptions(p,"confirm","Confirm Action",Map.of(11,"Confirm",15,"Cancel"));}
     private void confirm(Player p,int s){if(s==15){pending.remove(p.getUniqueId());confirmations.remove(p.getUniqueId());openMain(p);return;}if(s!=11)return;Long until=confirmations.get(p.getUniqueId());Action a=pending.get(p.getUniqueId());if(until==null||until<System.currentTimeMillis()||a==null){openMain(p);return;}pending.remove(p.getUniqueId());confirmations.remove(p.getUniqueId());Player t=target(p);switch(a){case CLEAR_INV -> {if(t!=null)t.getInventory().clear();done(p,"Clear Inventory");}case KICK_ALL -> {for(Player x:Bukkit.getOnlinePlayers())if(!x.equals(p)&&(!plugin.getConfig().getBoolean("settings.kick-all-except-staff",true)||!x.hasPermission("voidflame.staff")))x.kickPlayer(color("&cRemoved by staff."));done(p,"Kick All Players");}case STOP -> {done(p,"Stop Server");Bukkit.shutdown();}case REMOVE_WORLD -> { } }if(Bukkit.isPrimaryThread()&&!a.equals(Action.STOP))openMain(p);}
 
     // Public entry points used by the central Admin console.
