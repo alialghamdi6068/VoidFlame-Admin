@@ -47,7 +47,7 @@ public final class AdvancedAdminGui implements Listener {
         List<Player> players = sortedPlayers();
         for (int i = 0; i < Math.min(players.size(), 78); i++) {
             Player target = players.get(i);
-            buttons.add(action(target.getName(), "Select " + target.getName() + ".", "/vfadmin advclick punish-select:" + action + " " + (i + 100), NamedTextColor.AQUA));
+            buttons.add(action(target.getName(), "Select " + target.getName() + ".", "/vfadmin advclick punish-select:" + action + " " + target.getUniqueId(), NamedTextColor.AQUA));
         }
         buttons.add(action("Back", "Return to punishments.", "/vfadmin advclick punishments 49", NamedTextColor.GRAY));
         showDialog(staff, action.toUpperCase(Locale.ROOT) + " • Player", "Choose an online player.", buttons);
@@ -86,7 +86,7 @@ public final class AdvancedAdminGui implements Listener {
         List<Player> players = sortedPlayers();
         for (int i = 0; i < Math.min(players.size(), 78); i++) {
             Player target = players.get(i);
-            buttons.add(action(target.getName(), "View recent punishment history.", "/vfadmin advclick history-select " + (i + 100), NamedTextColor.AQUA));
+            buttons.add(action(target.getName(), "View recent punishment history.", "/vfadmin advclick history-select " + target.getUniqueId(), NamedTextColor.AQUA));
         }
         buttons.add(action("Back", "Return to punishments.", "/vfadmin punishments", NamedTextColor.GRAY));
         showDialog(staff, "Punishment History", "Select an online player.", buttons);
@@ -97,7 +97,7 @@ public final class AdvancedAdminGui implements Listener {
         List<Player> players = sortedPlayers();
         for (int i = 0; i < Math.min(players.size(), 78); i++) {
             Player target = players.get(i);
-            buttons.add(action(target.getName(), "Open player management.", "/vfadmin advclick player-manager " + (i + 100), NamedTextColor.AQUA));
+            buttons.add(action(target.getName(), "Open player management.", "/vfadmin advclick player-manager " + target.getUniqueId(), NamedTextColor.AQUA));
         }
         buttons.add(action("Back", "Return to Staff.", "/vfadmin", NamedTextColor.GRAY));
         showDialog(p, "Player Manager", "Select an online player.", buttons);
@@ -248,9 +248,38 @@ public final class AdvancedAdminGui implements Listener {
                 DialogAction.commandTemplate(command));
     }
 
+    public void dialogClick(Player p, String type, String rawAction) {
+        if (!AdminAccess.hasAdminAccess(p)) { p.sendMessage(color("&cJava staff only.")); return; }
+        try {
+            dialogClick(p, type, Integer.parseInt(rawAction));
+            return;
+        } catch (NumberFormatException ignored) { }
+        try {
+            UUID id = UUID.fromString(rawAction);
+            Player target = Bukkit.getPlayer(id);
+            if (target == null) { p.sendMessage(color("&cThat player is no longer online.")); openPunishments(p); return; }
+            if (type.startsWith("punish-select:")) {
+                String action = type.substring("punish-select:".length());
+                if (action.equals("unpunish")) {
+                    plugin.punishments().execute(p, new String[]{"unpunish", target.getName()});
+                    openPunishments(p);
+                } else if (action.equals("warn") || action.equals("kick")) requestReason(p, action, target, null);
+                else openDuration(p, action, target);
+            } else if (type.equals("history-select")) {
+                plugin.punishments().execute(p, new String[]{"history", target.getName()});
+            } else if (type.equals("player-manager")) {
+                openPlayerActions(p, target);
+            } else {
+                p.sendMessage(color("&cInvalid Dialog action."));
+            }
+        } catch (IllegalArgumentException ex) {
+            p.sendMessage(color("&cInvalid player identifier."));
+        }
+    }
+
     public void dialogClick(Player p, String t, int s) {
         if (!AdminAccess.hasAdminAccess(p)) { p.sendMessage(color("&cJava staff only.")); return; }
-        if (s >= 100 && (t.startsWith("punish-select:") || t.equals("history-select") || t.equals("player-manager") || t.equals("backups"))) s -= 100;
+        if (s >= 100 && t.equals("backups")) s -= 100;
     if (s==49) {
         if (t.startsWith("punish-select:") || t.startsWith("duration:")) { openPunishments(p); return; }
         if (t.startsWith("player-actions:")) { openPlayerManager(p); return; }
