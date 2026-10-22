@@ -132,6 +132,43 @@ public final class StaffGui implements Listener {
         p.showDialog(dialog);
     }
 
+    private void showInventoryDialog(Player viewer, Player target, boolean enderChest) {
+        if (!AdminAccess.hasStaffAccess(viewer) || !require(viewer, "voidflame.staff.manage")) return;
+        ItemStack[] contents = enderChest ? target.getEnderChest().getContents() : target.getInventory().getStorageContents();
+        List<DialogBody> body = new ArrayList<>();
+        body.add(DialogBody.plainMessage(Component.text((enderChest ? "ENDER CHEST" : "PLAYER INVENTORY") + " • " + target.getName(), NamedTextColor.AQUA), 300));
+        boolean found = false;
+        for (int slot = 0; slot < contents.length; slot++) {
+            ItemStack item = contents[slot];
+            if (item == null || item.getType() == Material.AIR) continue;
+            found = true;
+            body.add(DialogBody.plainMessage(Component.text("Slot " + (slot + 1) + ": " + item.getAmount() + " × " + item.getType().name().toLowerCase(Locale.ROOT).replace('_', ' '), NamedTextColor.WHITE), 300));
+        }
+        if (!enderChest) {
+            for (ItemStack item : target.getInventory().getArmorContents()) {
+                if (item != null && item.getType() != Material.AIR) {
+                    found = true;
+                    body.add(DialogBody.plainMessage(Component.text("Armor: " + item.getAmount() + " × " + item.getType().name().toLowerCase(Locale.ROOT).replace('_', ' '), NamedTextColor.GOLD), 300));
+                }
+            }
+            ItemStack offhand = target.getInventory().getItemInOffHand();
+            if (offhand.getType() != Material.AIR) {
+                found = true;
+                body.add(DialogBody.plainMessage(Component.text("Offhand: " + offhand.getAmount() + " × " + offhand.getType().name().toLowerCase(Locale.ROOT).replace('_', ' '), NamedTextColor.GOLD), 300));
+            }
+        }
+        if (!found) body.add(DialogBody.plainMessage(Component.text("No items in this inventory.", NamedTextColor.GRAY), 300));
+        List<ActionButton> actions = List.of(
+                staffButton("Refresh", "Refresh the displayed inventory.", "/staffgui viewinventory " + target.getUniqueId() + (enderChest ? " ender" : " player"), NamedTextColor.AQUA),
+                staffButton("Back", "Return to Player Manager.", "/staffgui player", NamedTextColor.GRAY));
+        Dialog dialog = Dialog.create(builder -> builder.empty()
+                .base(DialogBase.builder(Component.text("Inventory • " + target.getName(), NamedTextColor.WHITE))
+                        .externalTitle(Component.text("Staff", NamedTextColor.AQUA)).canCloseWithEscape(true)
+                        .body(body).build())
+                .type(DialogType.multiAction(actions).columns(2).build()));
+        viewer.showDialog(dialog);
+    }
+
     public void dialogAction(Player p, String type, int slot) {
         if (!AdminAccess.hasStaffAccess(p)) { msg(p, "no-permission"); return; }
         switch (type.toLowerCase(Locale.ROOT)) {
@@ -163,7 +200,7 @@ public final class StaffGui implements Listener {
             case 11 -> p.sendMessage(color("&8Health: &f" + String.format(Locale.ROOT, "%.1f", t.getHealth())
                     + " &7| Food: &f" + t.getFoodLevel() + " &7| XP: &f" + t.getLevel()
                     + " &7| Mode: &f" + t.getGameMode() + " &7| World: &f" + t.getWorld().getName()));
-            case 12 -> { if (require(p, "voidflame.staff.manage")) p.openInventory(t.getInventory()); }
+            case 12 -> { if (require(p, "voidflame.staff.manage")) showInventoryDialog(p, t, false); }
             case 13 -> { if (require(p, "voidflame.staff.basic")) { heal(t); done(p, "Heal Target"); openPlayerManager(p); } }
             case 14 -> { if (require(p, "voidflame.staff.moderate")) confirm(p, Action.CLEAR_INV); }
             case 15 -> { if (require(p, "voidflame.staff.basic")) { p.teleport(t.getLocation()); done(p, "Teleport To"); openPlayerManager(p); } }
@@ -280,7 +317,7 @@ public final class StaffGui implements Listener {
     private void main(Player p,int s){
         if(!AdminAccess.hasStaffAccess(p)){msg(p,"no-permission");return;}
         if(s==28){if(require(p,"voidflame.staff.players"))openPlayers(p);return;}
-        if(s==24){if(require(p,"voidflame.staff.basic"))p.openInventory(p.getInventory());return;}
+        if(s==24){if(require(p,"voidflame.staff.basic"))showInventoryDialog(p,p,false);return;}
         if(s==25){if(require(p,"voidflame.staff.basic"))p.openWorkbench(null,true);return;}
         Player t=target(p);
         if(t==null && s!=31 && s!=32 && s!=30 && s!=34 && s!=33){msg(p,"target-required");return;}
