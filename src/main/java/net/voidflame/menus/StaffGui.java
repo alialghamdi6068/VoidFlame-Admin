@@ -492,7 +492,12 @@ public final class StaffGui implements Listener {
 
     private boolean deleteFolder(java.io.File folder) {
         java.nio.file.Path root = folder.toPath().toAbsolutePath().normalize();
-        if (java.nio.file.Files.isSymbolicLink(root)) return false;
+        java.nio.file.Path worldContainer = Bukkit.getWorldContainer().toPath().toAbsolutePath().normalize();
+        if (root.equals(worldContainer) || !root.startsWith(worldContainer)
+                || java.nio.file.Files.isSymbolicLink(root)) {
+            plugin.getLogger().warning("Refusing to delete world folder outside the server world container: " + root);
+            return false;
+        }
         if (!java.nio.file.Files.exists(root, java.nio.file.LinkOption.NOFOLLOW_LINKS)) return true;
         try (var paths = java.nio.file.Files.walk(root)) {
             for (java.nio.file.Path path : paths.sorted(java.util.Comparator.reverseOrder()).toList()) {
