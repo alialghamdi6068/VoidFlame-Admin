@@ -176,7 +176,15 @@ public final class AdvancedAdminGui implements Listener {
         }).thenCombine(AdminServices.query("SELECT name,wins FROM player_profiles ORDER BY wins DESC LIMIT 1"), (a, top) -> {
             String topPlayer = top.isEmpty() ? "N/A" : String.valueOf(top.get(0).getOrDefault("name", "N/A")) + " (" + top.get(0).getOrDefault("wins", 0) + ")";
             return new Analytics(a.players,a.matches,a.elo,a.wins,a.losses,a.topKit,a.topPlayer);
-        }).thenAccept(data -> Bukkit.getScheduler().runTask(plugin, () -> renderAnalytics(p, data)));
+        }).whenComplete((data, error) -> Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!p.isOnline()) return;
+            if (error != null) {
+                plugin.getLogger().warning("Could not load server analytics for " + p.getUniqueId() + ": " + error.getMessage());
+                p.sendMessage(color("&cAnalytics could not be loaded because a Core query failed. Please try again."));
+                return;
+            }
+            renderAnalytics(p, data);
+        }));
     }
 
     private void renderAnalytics(Player p, Analytics a) {
