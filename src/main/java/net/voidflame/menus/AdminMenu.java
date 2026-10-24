@@ -15,10 +15,14 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class AdminMenu implements Listener {
     public static final String TITLE = "§8Staff";
     private final VoidFlameMenusPlugin plugin;
+    private final Map<UUID, Long> pendingRestoreConfirmations = new ConcurrentHashMap<>();
 
     public AdminMenu(VoidFlameMenusPlugin plugin) { this.plugin = plugin; }
 
@@ -82,7 +86,7 @@ public final class AdminMenu implements Listener {
             case "management" -> openManagement(p);
             case "server" -> openServer(p);
             case "security" -> openSecurity(p);
-            case "data" -> openData(p);
+            case "data" -> { pendingRestoreConfirmations.remove(p.getUniqueId()); openData(p); }
             case "backup" -> AdminServices.backup().whenComplete((ok, error) -> Bukkit.getScheduler().runTask(plugin, () -> {
                 if (error == null) { plugin.audit(p.getName(), "CORE_BACKUP"); p.sendMessage(color("&aCore database backup created.")); }
                 else p.sendMessage(color("&cBackup failed: &f" + error.getMessage()));
@@ -200,6 +204,15 @@ public final class AdminMenu implements Listener {
     }
 
     private void openRestoreConfirmation(Player p) {
+        if (!AdminAccess.hasAdminAccess(p)) { deny(p); return; }
+        pendingRestoreConfirmations.put(p.getUniqueId(), System.currentTimeMillis());
+        long expiryTicks = Math.max(1L, plugin.getConfig().getLong("security.confirmation-seconds", 15L)) * 20L;
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            Long created = pendingRestoreConfirmations.get(p.getUniqueId());
+            if (created != null && System.currentTimeMillis() - created >= expiryTicks * 50L) {
+                pendingRestoreConfirmations.remove(p.getUniqueId(), created);
+            }
+        }, expiryTicks);
         showAdminDialog(p, "Confirm Restore", "Restoring replaces the current database state. A safety backup is created first.",
             List.of(
                 adminButton("Confirm Restore", "Restore the latest validated Core backup.", "/vfadmin restoreyes", NamedTextColor.RED),
@@ -209,7 +222,16 @@ public final class AdminMenu implements Listener {
 
     private void restoreLatest(Player p) {
         if (!AdminAccess.hasAdminAccess(p)) { deny(p); return; }
+        Long created = pendingRestoreConfirmations.remove(p.getUniqueId());
+        long now = System.currentTimeMillis();
+        long expiryMillis = Math.max(1L, plugin.getConfig().getLong("security.confirmation-seconds", 15L)) * 1000L;
+        if (created == null || now < created || now - created > expiryMillis) {
+            p.sendMessage(color("&cRestore confirmation expired or missing. Open the confirmation screen and try again."));
+            openData(p);
+            return;
+        }
         AdminServices.restoreLatest().whenComplete((ok, error) -> Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!p.isOnline()) return;
             if (error == null) {
                 plugin.audit(p.getName(), "CORE_RESTORE_LATEST");
                 p.sendMessage(color("&aCore database restore completed. Restart/reload the server if required."));
