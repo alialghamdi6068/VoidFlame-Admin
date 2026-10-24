@@ -36,6 +36,7 @@ public final class StaffGui implements Listener {
     private final Set<UUID> frozen = new HashSet<>();
     private final Map<UUID, Long> confirmations = new HashMap<>();
     private final Map<UUID, Action> pending = new HashMap<>();
+    private final Map<UUID, UUID> pendingWorldRemoval = new HashMap<>();
     private boolean lockTime, lockWeather;
     private long lockedTime = 6000L;
     private boolean storm;
@@ -52,7 +53,7 @@ public final class StaffGui implements Listener {
     }
 
     public void onDisable() {
-        targets.clear(); pendingSection.clear(); confirmations.clear(); pending.clear();
+        targets.clear(); pendingSection.clear(); confirmations.clear(); pending.clear(); pendingWorldRemoval.clear();
         saveState();
     }
 
@@ -245,11 +246,16 @@ public final class StaffGui implements Listener {
                 p.teleport(w.getSpawnLocation());
                 done(p, "Teleport to World");
             } else if ("remove".equalsIgnoreCase(action)) {
+                if (!require(p, "voidflame.staff.admin")) return;
+                if (isProtectedWorld(w)) {
+                    p.sendMessage(color("&cThis world is protected and cannot be deleted from the Staff GUI."));
+                    openWorlds(p);
+                    return;
+                }
                 if (w.equals(p.getWorld())) { msg(p, "cannot-remove-current-world"); return; }
                 if (!w.getPlayers().isEmpty()) { msg(p, "world-has-players"); return; }
-                if (!Bukkit.unloadWorld(w, false)) { p.sendMessage(color("&cCould not unload world.")); return; }
-                deleteFolder(w.getWorldFolder());
-                done(p, "World Removed");
+                confirm(p, Action.REMOVE_WORLD, w.getUID());
+                return;
             }
             openWorlds(p);
         } catch (IllegalArgumentException ex) {
@@ -441,11 +447,37 @@ public final class StaffGui implements Listener {
                 .type(DialogType.multiAction(actions).columns(2).build()));
         p.showDialog(dialog);
     }
-    private void deleteFolder(java.io.File f){
-        if(!f.exists())return;
-        java.io.File[] children=f.listFiles();
-        if(children!=null)for(java.io.File child:children)deleteFolder(child);
-        f.delete();
+    private boolean isProtectedWorld(World world) {
+        if (world == null) return true;
+        List<World> loaded = Bukkit.getWorlds();
+        if (!loaded.isEmpty() && loaded.get(0).getUID().equals(world.getUID())) return true;
+        String name = world.getName().toLowerCase(Locale.ROOT);
+        if (Set.of("world", "world_nether", "world_the_end", "spawn", "ffa").contains(name)
+                || name.endsWith("_nether") || name.endsWith("_the_end")) return true;
+
+        Plugin duels = Bukkit.getPluginManager().getPlugin("VoidFlame-Duels");
+        if (duels != null && duels.isEnabled()) {
+            for (Map<?, ?> arena : duels.getConfig().getMapList("arenas.list")) {
+                Object configuredWorld = arena.get("world");
+                if (configuredWorld != null && name.equalsIgnoreCase(String.valueOf(configuredWorld))) return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean deleteFolder(java.io.File folder) {
+        java.nio.file.Path root = folder.toPath().toAbsolutePath().normalize();
+        if (java.nio.file.Files.isSymbolicLink(root)) return false;
+        if (!java.nio.file.Files.exists(root, java.nio.file.LinkOption.NOFOLLOW_LINKS)) return true;
+        try (var paths = java.nio.file.Files.walk(root)) {
+            for (java.nio.file.Path path : paths.sorted(java.util.Comparator.reverseOrder()).toList()) {
+                java.nio.file.Files.deleteIfExists(path);
+            }
+            return true;
+        } catch (java.io.IOException error) {
+            plugin.getLogger().severe("Could not completely delete unloaded world folder '" + root + "': " + error.getMessage());
+            return false;
+        }
     }
 
     private void openTime(Player p){if(!AdminAccess.hasStaffAccess(p))return;openNativeOptions(p,"time","Time & Weather",Map.of(10,"Day",11,"Noon",12,"Night",13,"Clear Weather",14,"Storm",15,"Toggle Time Lock ("+(lockTime?"On":"Off")+")",16,"Toggle Weather Lock ("+(lockWeather?"On":"Off")+")",17,"Back"));}
@@ -460,8 +492,102 @@ public final class StaffGui implements Listener {
     @EventHandler public void blocks(BlockPlaceEvent e){if(!flags.getOrDefault("block-place",true)&&!e.getPlayer().hasPermission("voidflame.staff"))e.setCancelled(true);}
     @EventHandler public void mobs(CreatureSpawnEvent e){if(!flags.getOrDefault("mob-spawning",true)&&e.getSpawnReason()==CreatureSpawnEvent.SpawnReason.NATURAL)e.setCancelled(true);}
 
-    private void confirm(Player p,Action a){if((a==Action.CLEAR_INV||a==Action.KICK_ALL||a==Action.STOP)&&!p.hasPermission("voidflame.staff.admin")){msg(p,"no-permission");return;}pending.put(p.getUniqueId(),a);confirmations.put(p.getUniqueId(),System.currentTimeMillis()+15000);openNativeOptions(p,"confirm","Confirm Action",Map.of(11,"Confirm",15,"Cancel"));}
-    private void confirm(Player p,int s){if(s==15){pending.remove(p.getUniqueId());confirmations.remove(p.getUniqueId());openMain(p);return;}if(s!=11)return;Long until=confirmations.get(p.getUniqueId());Action a=pending.get(p.getUniqueId());if(until==null||until<System.currentTimeMillis()||a==null){openMain(p);return;}pending.remove(p.getUniqueId());confirmations.remove(p.getUniqueId());Player t=target(p);switch(a){case CLEAR_INV -> {if(t!=null)t.getInventory().clear();done(p,"Clear Inventory");}case KICK_ALL -> {for(Player x:Bukkit.getOnlinePlayers())if(!x.equals(p)&&(!plugin.getConfig().getBoolean("settings.kick-all-except-staff",true)||!x.hasPermission("voidflame.staff")))x.kickPlayer(color("&cRemoved by staff."));done(p,"Kick All Players");}case STOP -> {done(p,"Stop Server");Bukkit.shutdown();}case REMOVE_WORLD -> { } }if(Bukkit.isPrimaryThread()&&!a.equals(Action.STOP))openMain(p);}
+    private void confirm(Player p, Action action) {
+        confirm(p, action, null);
+    }
+
+    private void confirm(Player p, Action action, UUID worldId) {
+        if ((action == Action.CLEAR_INV || action == Action.KICK_ALL || action == Action.STOP
+                || action == Action.REMOVE_WORLD) && !require(p, "voidflame.staff.admin")) return;
+        if (action == Action.REMOVE_WORLD) {
+            if (worldId == null) { msg(p, "world-operation-failed"); return; }
+            pendingWorldRemoval.put(p.getUniqueId(), worldId);
+        } else {
+            pendingWorldRemoval.remove(p.getUniqueId());
+        }
+        pending.put(p.getUniqueId(), action);
+        confirmations.put(p.getUniqueId(), System.currentTimeMillis() + 15000L);
+        openNativeOptions(p, "confirm", "Confirm Action",
+                Map.of(11, action == Action.REMOVE_WORLD ? "Confirm World Deletion" : "Confirm",
+                       15, "Cancel"));
+    }
+
+    private void confirm(Player p, int slot) {
+        UUID actor = p.getUniqueId();
+        if (slot == 15) {
+            pending.remove(actor);
+            confirmations.remove(actor);
+            pendingWorldRemoval.remove(actor);
+            openMain(p);
+            return;
+        }
+        if (slot != 11) return;
+        Long until = confirmations.get(actor);
+        Action action = pending.get(actor);
+        if (until == null || until < System.currentTimeMillis() || action == null) {
+            pending.remove(actor);
+            confirmations.remove(actor);
+            pendingWorldRemoval.remove(actor);
+            p.sendMessage(color("&cConfirmation expired. Please start the action again."));
+            openMain(p);
+            return;
+        }
+        if ((action == Action.CLEAR_INV || action == Action.KICK_ALL || action == Action.STOP
+                || action == Action.REMOVE_WORLD) && !require(p, "voidflame.staff.admin")) return;
+        pending.remove(actor);
+        confirmations.remove(actor);
+        Player target = target(p);
+        switch (action) {
+            case CLEAR_INV -> {
+                if (target == null) msg(p, "target-required");
+                else { target.getInventory().clear(); done(p, "Clear Inventory"); }
+            }
+            case KICK_ALL -> {
+                for (Player online : Bukkit.getOnlinePlayers()) {
+                    if (!online.equals(p) && (!plugin.getConfig().getBoolean("settings.kick-all-except-staff", true)
+                            || !online.hasPermission("voidflame.staff"))) {
+                        online.kickPlayer(color("&cRemoved by staff."));
+                    }
+                }
+                done(p, "Kick All Players");
+            }
+            case STOP -> { done(p, "Stop Server"); Bukkit.shutdown(); }
+            case REMOVE_WORLD -> {
+                UUID worldId = pendingWorldRemoval.remove(actor);
+                World world = worldId == null ? null : Bukkit.getWorld(worldId);
+                if (world == null || isProtectedWorld(world)) {
+                    p.sendMessage(color("&cWorld deletion cancelled: the world is missing or protected."));
+                    openWorlds(p);
+                    return;
+                }
+                if (world.equals(p.getWorld())) {
+                    msg(p, "cannot-remove-current-world");
+                    openWorlds(p);
+                    return;
+                }
+                if (!world.getPlayers().isEmpty()) {
+                    msg(p, "world-has-players");
+                    openWorlds(p);
+                    return;
+                }
+                java.io.File worldFolder = world.getWorldFolder();
+                if (!Bukkit.unloadWorld(world, false)) {
+                    p.sendMessage(color("&cCould not unload world; no files were deleted."));
+                    openWorlds(p);
+                    return;
+                }
+                if (!deleteFolder(worldFolder)) {
+                    p.sendMessage(color("&cWorld unloaded, but its folder could not be completely deleted. Check the server log."));
+                    openWorlds(p);
+                    return;
+                }
+                done(p, "World Removed");
+                openWorlds(p);
+                return;
+            }
+        }
+        if (Bukkit.isPrimaryThread() && action != Action.STOP) openMain(p);
+    }
 
     // Public entry points used by the central Admin console.
     public void openWorldsFromAdmin(Player p){ loadState(); if(!AdminAccess.isBedrock(p) && (p.hasPermission("voidflame.admin") || p.hasPermission("voidflame.admin.full") || p.hasPermission("voidflame.admin.settings"))) openWorlds(p); else msg(p,"no-permission"); }
