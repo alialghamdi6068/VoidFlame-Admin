@@ -471,8 +471,17 @@ public final class StaffGui implements Listener {
         if (Set.of("world", "world_nether", "world_the_end", "spawn", "ffa").contains(name)
                 || name.endsWith("_nether") || name.endsWith("_the_end")) return true;
 
+        Plugin core = Bukkit.getPluginManager().getPlugin("VoidFlame-Core");
+        if (core != null && core.isEnabled()) {
+            if (name.equalsIgnoreCase(core.getConfig().getString("spawn.world", "duelpvp"))) return true;
+            for (String enabledWorld : core.getConfig().getStringList("worlds.enabled")) {
+                if (name.equalsIgnoreCase(enabledWorld)) return true;
+            }
+        }
+
         Plugin duels = Bukkit.getPluginManager().getPlugin("VoidFlame-Duels");
         if (duels != null && duels.isEnabled()) {
+            if (name.equalsIgnoreCase(duels.getConfig().getString("features.ffa.world", "ffa"))) return true;
             for (Map<?, ?> arena : duels.getConfig().getMapList("arenas.list")) {
                 Object configuredWorld = arena.get("world");
                 if (configuredWorld != null && name.equalsIgnoreCase(String.valueOf(configuredWorld))) return true;
