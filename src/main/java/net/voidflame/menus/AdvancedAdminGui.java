@@ -522,34 +522,52 @@ public final class AdvancedAdminGui implements Listener {
     }
 
     private void showInventoryDialog(Player staff, Player target, boolean enderChest) {
+        showInventoryDialog(staff, target, enderChest, 0);
+    }
+
+    private void showInventoryDialog(Player staff, Player target, boolean enderChest, int requestedPage) {
         if (!AdminAccess.hasAdminAccess(staff)) { staff.sendMessage(color("&cJava staff only.")); return; }
         Inventory inventory = enderChest ? target.getEnderChest() : target.getInventory();
         int size = enderChest ? inventory.getSize() : target.getInventory().getStorageContents().length;
+        int pageSize = 9;
+        int pageCount = Math.max(1, (size + pageSize - 1) / pageSize);
+        int page = Math.max(0, Math.min(requestedPage, pageCount - 1));
+        int firstSlot = page * pageSize;
+        int lastSlot = Math.min(size, firstSlot + pageSize);
+        String inventoryType = enderChest ? "ender" : "player";
         List<DialogBody> body = new ArrayList<>();
         body.add(DialogBody.plainMessage(Component.text((enderChest ? "ENDER CHEST" : "PLAYER INVENTORY")
                 + " • " + target.getName(), NamedTextColor.AQUA), 300));
+        body.add(DialogBody.plainMessage(Component.text("Page " + (page + 1) + " of " + pageCount
+                + " • Select a slot to edit it safely.", NamedTextColor.GRAY), 300));
         List<ActionButton> actions = new ArrayList<>();
-        String inventoryType = enderChest ? "ender" : "player";
-        for (int slot = 0; slot < size; slot++) {
+        for (int slot = firstSlot; slot < lastSlot; slot++) {
             ItemStack item = inventory.getItem(slot);
             String itemName = item == null || item.getType() == Material.AIR ? "Empty"
                     : item.getAmount() + " × " + item.getType().name().toLowerCase(Locale.ROOT).replace('_', ' ');
             body.add(DialogBody.plainMessage(Component.text("Slot " + (slot + 1) + ": " + itemName,
                     item == null || item.getType() == Material.AIR ? NamedTextColor.GRAY : NamedTextColor.WHITE), 280));
             actions.add(action("Slot " + (slot + 1), itemName + " • Open slot actions.",
-                    "/vfadmin advclick inventory-slot:" + target.getUniqueId() + ":" + slot + ":" + inventoryType + " 10",
+                    "/vfadmin advclick inventory-slot:" + target.getUniqueId() + ":" + slot + ":" + inventoryType + ":" + page + " 10",
                     NamedTextColor.AQUA));
         }
-        String type = "player-actions:" + target.getUniqueId();
+        if (page > 0) actions.add(action("Previous Page", "Show the previous set of slots.",
+                "/vfadmin advclick inventory-page:" + target.getUniqueId() + ":" + (page - 1) + ":" + inventoryType + " 10",
+                NamedTextColor.BLUE));
+        if (page + 1 < pageCount) actions.add(action("Next Page", "Show the next set of slots.",
+                "/vfadmin advclick inventory-page:" + target.getUniqueId() + ":" + (page + 1) + ":" + inventoryType + " 10",
+                NamedTextColor.BLUE));
         actions.add(action("Refresh", "Refresh this inventory listing.",
-                "/vfadmin advclick " + type + (enderChest ? " 14" : " 12"), NamedTextColor.GREEN));
-        actions.add(action("Back", "Return to player management.", "/vfadmin advclick " + type + " 49", NamedTextColor.GRAY));
+                "/vfadmin advclick inventory-page:" + target.getUniqueId() + ":" + page + ":" + inventoryType + " 10",
+                NamedTextColor.GREEN));
+        actions.add(action("Back", "Return to player management.",
+                "/vfadmin advclick player-actions:" + target.getUniqueId() + " 49", NamedTextColor.GRAY));
         showDialog(staff, (enderChest ? "Ender Chest" : "Inventory") + " • " + target.getName(),
                 "Select a slot to move its stack to your inventory or place the item in your hand into an empty slot.",
                 actions, body);
     }
 
-    private void openInventorySlotActions(Player staff, UUID targetId, int slot, boolean enderChest) {
+    private void openInventorySlotActions(Player staff, UUID targetId, int slot, boolean enderChest, int page) {
         if (!AdminAccess.hasAdminAccess(staff)) { staff.sendMessage(color("&cNo permission.")); return; }
         Player target = Bukkit.getPlayer(targetId);
         if (target == null || !target.isOnline()) {
@@ -559,38 +577,40 @@ public final class AdvancedAdminGui implements Listener {
         }
         if (staff.getUniqueId().equals(targetId)) {
             staff.sendMessage(color("&cUse your normal inventory to manage your own items."));
-            showInventoryDialog(staff, target, enderChest);
+            showInventoryDialog(staff, target, enderChest, page);
             return;
         }
         if (isTargetInPracticeActivity(target)) {
             staff.sendMessage(color("&cInventory editing is disabled while the target is queued or in a match/FFA."));
-            showInventoryDialog(staff, target, enderChest);
+            showInventoryDialog(staff, target, enderChest, page);
             return;
         }
         Inventory inventory = enderChest ? target.getEnderChest() : target.getInventory();
         int size = enderChest ? inventory.getSize() : target.getInventory().getStorageContents().length;
         if (slot < 0 || slot >= size) {
             staff.sendMessage(color("&cInvalid inventory slot."));
-            showInventoryDialog(staff, target, enderChest);
+            showInventoryDialog(staff, target, enderChest, page);
             return;
         }
         ItemStack item = inventory.getItem(slot);
         boolean occupied = item != null && item.getType() != Material.AIR;
         ItemStack held = staff.getInventory().getItemInMainHand();
         boolean holdingItem = held != null && held.getType() != Material.AIR;
-        String type = "inventory-edit:" + targetId + ":" + slot + ":" + (enderChest ? "ender" : "player");
+        String type = "inventory-edit:" + targetId + ":" + slot + ":" + (enderChest ? "ender" : "player") + ":" + page;
         List<ActionButton> actions = new ArrayList<>();
         if (occupied) actions.add(action("Take Stack", "Move this stack into your inventory without deleting it.",
                 "/vfadmin advclick " + type + " 10", NamedTextColor.GOLD));
         if (!occupied && holdingItem) actions.add(action("Place Held Stack", "Move the item in your main hand into this empty slot.",
                 "/vfadmin advclick " + type + " 12", NamedTextColor.GREEN));
-        actions.add(action("Back", "Return to the inventory slots.", "/vfadmin advclick inventory-back:" + targetId + ":" + (enderChest ? "ender" : "player") + " 49", NamedTextColor.GRAY));
+        actions.add(action("Back", "Return to the inventory slots.",
+                "/vfadmin advclick inventory-page:" + targetId + ":" + page + ":" + (enderChest ? "ender" : "player") + " 10",
+                NamedTextColor.GRAY));
         showDialog(staff, (enderChest ? "Ender Chest" : "Inventory") + " • Slot " + (slot + 1),
                 "Target: " + target.getName() + " • " + (occupied ? item.getAmount() + " × " + item.getType().name() : "Empty"),
                 actions);
     }
 
-    private void editInventorySlot(Player staff, UUID targetId, int slot, boolean enderChest, int action) {
+    private void editInventorySlot(Player staff, UUID targetId, int slot, boolean enderChest, int action, int page) {
         if (!AdminAccess.hasAdminAccess(staff)) { staff.sendMessage(color("&cNo permission.")); return; }
         Player target = Bukkit.getPlayer(targetId);
         if (target == null || !target.isOnline()) {
@@ -604,14 +624,14 @@ public final class AdvancedAdminGui implements Listener {
         }
         if (isTargetInPracticeActivity(target)) {
             staff.sendMessage(color("&cInventory editing is disabled while the target is queued or in a match/FFA."));
-            showInventoryDialog(staff, target, enderChest);
+            showInventoryDialog(staff, target, enderChest, page);
             return;
         }
         Inventory inventory = enderChest ? target.getEnderChest() : target.getInventory();
         int size = enderChest ? inventory.getSize() : target.getInventory().getStorageContents().length;
         if (slot < 0 || slot >= size) {
             staff.sendMessage(color("&cInvalid inventory slot."));
-            showInventoryDialog(staff, target, enderChest);
+            showInventoryDialog(staff, target, enderChest, page);
             return;
         }
         ItemStack existing = inventory.getItem(slot);
@@ -624,8 +644,6 @@ public final class AdvancedAdminGui implements Listener {
                 inventory.setItem(slot, null);
                 Map<Integer, ItemStack> leftovers = staff.getInventory().addItem(moving);
                 if (!leftovers.isEmpty()) {
-                    // The target slot was cleared first, so returning the remainder here
-                    // preserves every item even if the recipient inventory has no capacity.
                     inventory.setItem(slot, leftovers.values().iterator().next());
                     staff.sendMessage(color("&eYour inventory was full; the untransferred remainder stayed in the target slot."));
                 } else {
@@ -648,7 +666,24 @@ public final class AdvancedAdminGui implements Listener {
         } else {
             staff.sendMessage(color("&cInvalid inventory action."));
         }
-        showInventoryDialog(staff, target, enderChest);
+        showInventoryDialog(staff, target, enderChest, page);
+    }
+
+    private void openInventoryPageFromToken(Player staff, String raw) {
+        String[] parts = raw.split(":");
+        if (parts.length != 4) { staff.sendMessage(color("&cInvalid inventory selection.")); return; }
+        try {
+            UUID targetId = UUID.fromString(parts[1]);
+            int page = Integer.parseInt(parts[2]);
+            Player target = Bukkit.getPlayer(targetId);
+            if (target == null || !target.isOnline()) {
+                staff.sendMessage(color("&cThat player is no longer online."));
+                return;
+            }
+            showInventoryDialog(staff, target, parts[3].equalsIgnoreCase("ender"), page);
+        } catch (IllegalArgumentException error) {
+            staff.sendMessage(color("&cInvalid inventory identifier."));
+        }
     }
 
     private void openInventoryFromToken(Player staff, String raw) {
