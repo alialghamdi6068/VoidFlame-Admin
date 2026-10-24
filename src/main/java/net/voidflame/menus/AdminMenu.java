@@ -110,7 +110,7 @@ public final class AdminMenu implements Listener {
                 plugin.audit(p.getName(), "SECURITY_LOCKDOWN:" + next);
                 openSecurity(p);
             }
-            case "analytics" -> new AdvancedAdminGui(plugin).openAnalytics(p);
+            case "analytics" -> plugin.advancedAdminGui().openAnalytics(p);
             case "staff" -> plugin.staffGui().openMain(p);
             case "duels" -> route(p, "voidflame.admin.duels", "integrations.duels");
             case "kits" -> route(p, "voidflame.admin.kits", "integrations.kits");
@@ -118,10 +118,10 @@ public final class AdminMenu implements Listener {
             case "queues" -> route(p, "voidflame.admin.queues", "integrations.queues");
             case "ffa" -> route(p, "voidflame.admin.ffa", "integrations.ffa");
             case "rewards" -> route(p, "voidflame.admin.rewards", "integrations.rewards");
-            case "players" -> new AdvancedAdminGui(plugin).openPlayerManager(p);
+            case "players" -> plugin.advancedAdminGui().openPlayerManager(p);
             case "menus" -> route(p, "voidflame.admin.menus", "integrations.menus");
             case "settings" -> route(p, "voidflame.admin.settings", "integrations.settings");
-            case "punishments" -> new AdvancedAdminGui(plugin).openPunishments(p);
+            case "punishments" -> plugin.advancedAdminGui().openPunishments(p);
             case "worlds" -> plugin.staffGui().openWorldsFromAdmin(p);
             case "timeweather" -> plugin.staffGui().openTimeFromAdmin(p);
             case "servermanager" -> plugin.staffGui().openServerFromAdmin(p);
