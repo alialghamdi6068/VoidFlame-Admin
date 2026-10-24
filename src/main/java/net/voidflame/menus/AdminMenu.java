@@ -85,7 +85,8 @@ public final class AdminMenu implements Listener {
             case "practice" -> openPractice(p);
             case "management" -> openManagement(p);
             case "server" -> openServer(p);
-            case "security" -> openSecurity(p);
+            case "security" -> plugin.advancedAdminGui().openSecurity(p);
+            case "backups" -> plugin.advancedAdminGui().openBackups(p);
             case "data" -> { pendingRestoreConfirmations.remove(p.getUniqueId()); openData(p); }
             case "backup" -> AdminServices.backup().whenComplete((ok, error) -> Bukkit.getScheduler().runTask(plugin, () -> {
                 if (error == null) { plugin.audit(p.getName(), "CORE_BACKUP"); p.sendMessage(color("&aCore database backup created.")); }
@@ -198,6 +199,7 @@ public final class AdminMenu implements Listener {
                 adminButton(online ? "Core Database: Online" : "Core Database: Offline",
                     "SQLite central database • " + (path.isBlank() ? "Path unavailable" : path), "/vfadmin data", online ? NamedTextColor.GREEN : NamedTextColor.RED),
                 adminButton("Create Backup", "Create a validated Core database backup.", "/vfadmin backup", NamedTextColor.AQUA),
+                adminButton("Select Backup", "Choose a specific backup and confirm the exact file to restore.", "/vfadmin backups", NamedTextColor.BLUE),
                 adminButton("Restore Latest", "Open confirmation before restoring the latest backup.", "/vfadmin restoreconfirm", NamedTextColor.RED),
                 adminButton("Back", "Return to Staff administration.", "/vfadmin", NamedTextColor.GRAY)
             ));
