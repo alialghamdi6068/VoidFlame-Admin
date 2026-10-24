@@ -9,6 +9,8 @@ import io.papermc.paper.registry.data.dialog.type.DialogType;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -16,6 +18,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
@@ -28,6 +31,7 @@ public final class AdvancedAdminGui implements Listener {
     private final VoidFlameMenusPlugin plugin;
     private final Map<UUID, PendingInput> input = new ConcurrentHashMap<>();
     private final Map<UUID, PendingRestore> pendingRestores = new ConcurrentHashMap<>();
+    private final Map<UUID, StaffSpectatorSnapshot> staffSpectators = new ConcurrentHashMap<>();
 
     public AdvancedAdminGui(VoidFlameMenusPlugin plugin) { this.plugin = plugin; }
 
@@ -114,7 +118,10 @@ public final class AdvancedAdminGui implements Listener {
                         action("View Ender Chest", "Inspect the ender chest contents.", "/vfadmin advclick " + type + " 14", NamedTextColor.LIGHT_PURPLE),
                         action("Teleport To", "Teleport yourself to the player.", "/vfadmin advclick " + type + " 16", NamedTextColor.GREEN),
                         action("Teleport Here", "Teleport the player to you.", "/vfadmin advclick " + type + " 28", NamedTextColor.YELLOW),
-                        action("Spectate", "Follow target in spectator mode.", "/vfadmin advclick " + type + " 30", NamedTextColor.BLUE),
+                        action(staffSpectators.containsKey(staff.getUniqueId()) ? "Stop Spectating" : "Spectate",
+                                staffSpectators.containsKey(staff.getUniqueId()) ? "Restore your previous game mode and location."
+                                        : "Follow target in spectator mode.",
+                                "/vfadmin advclick " + type + " 30", NamedTextColor.BLUE),
                         action("Heal", "Restore health and hunger.", "/vfadmin advclick " + type + " 32", NamedTextColor.GREEN),
                         action("Clear Inventory", "Clear the player's inventory.", "/vfadmin advclick " + type + " 34", NamedTextColor.RED),
                         action("Back", "Return to player list.", "/vfadmin advclick player-manager 49", NamedTextColor.GRAY)));
@@ -318,7 +325,7 @@ public final class AdvancedAdminGui implements Listener {
         else if(s==14)showInventoryDialog(p,target,true);
         else if(s==16)p.teleportAsync(target.getLocation());
         else if(s==28)target.teleportAsync(p.getLocation());
-        else if(s==30){p.setGameMode(org.bukkit.GameMode.SPECTATOR);p.setSpectatorTarget(target);}
+        else if(s==30) toggleStaffSpectator(p, target);
         else if(s==32){target.setHealth(target.getMaxHealth());target.setFoodLevel(20);target.setFireTicks(0);}
         else if(s==34)target.getInventory().clear();
         else if(s==49)openPlayerManager(p);
@@ -375,6 +382,56 @@ public final class AdvancedAdminGui implements Listener {
             openBackups(p);
         }
     }
+    }
+
+    private void toggleStaffSpectator(Player staff, Player target) {
+        UUID staffId = staff.getUniqueId();
+        StaffSpectatorSnapshot existing = staffSpectators.remove(staffId);
+        if (existing != null) {
+            staff.setSpectatorTarget(null);
+            staff.setGameMode(existing.gameMode());
+            staff.teleportAsync(existing.location());
+            staff.sendMessage(color("&aSpectator mode ended. Your previous game mode and location were restored."));
+            plugin.audit(staff.getName(), "STAFF_SPECTATE_STOP");
+            return;
+        }
+        if (staff.equals(target)) {
+            staff.sendMessage(color("&cYou cannot spectate yourself."));
+            return;
+        }
+        Location previousLocation = staff.getLocation().clone();
+        GameMode previousGameMode = staff.getGameMode();
+        staffSpectators.put(staffId, new StaffSpectatorSnapshot(previousLocation, previousGameMode));
+        staff.setGameMode(GameMode.SPECTATOR);
+        staff.setSpectatorTarget(target);
+        staff.sendMessage(color("&bNow spectating &f" + target.getName() + "&b. Use Stop Spectating in the player manager to return."));
+        plugin.audit(staff.getName(), "STAFF_SPECTATE_START:" + target.getUniqueId());
+    }
+
+    public void restoreAllSpectators() {
+        for (Map.Entry<UUID, StaffSpectatorSnapshot> entry : staffSpectators.entrySet()) {
+            Player staff = Bukkit.getPlayer(entry.getKey());
+            if (staff != null && staff.isOnline()) {
+                staff.setSpectatorTarget(null);
+                staff.setGameMode(entry.getValue().gameMode());
+                staff.teleport(entry.getValue().location());
+            }
+        }
+        staffSpectators.clear();
+    }
+
+    @EventHandler
+    public void onStaffQuit(PlayerQuitEvent event) {
+        UUID id = event.getPlayer().getUniqueId();
+        StaffSpectatorSnapshot snapshot = staffSpectators.remove(id);
+        if (snapshot != null) {
+            Player player = event.getPlayer();
+            player.setSpectatorTarget(null);
+            player.setGameMode(snapshot.gameMode());
+            player.teleport(snapshot.location());
+        }
+        input.remove(id);
+        pendingRestores.remove(id);
     }
 
     private void openCoreInfo(Player staff, Player target) {
@@ -574,5 +631,6 @@ public final class AdvancedAdminGui implements Listener {
     private double value(List<Map<String,Object>> r,String k){return r.isEmpty()?0:((Number)r.get(0).getOrDefault(k,0)).doubleValue();}
     private record PendingInput(String action,UUID target,String duration,long createdAt){}
     private record PendingRestore(Path backup, long createdAt){}
+    private record StaffSpectatorSnapshot(Location location, GameMode gameMode){}
     private record Analytics(double players,double matches,double elo,double wins,double losses,String topKit,String topPlayer){}
 }
