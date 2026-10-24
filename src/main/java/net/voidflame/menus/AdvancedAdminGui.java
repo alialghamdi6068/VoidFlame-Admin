@@ -661,13 +661,38 @@ public final class AdvancedAdminGui implements Listener {
     }
 
     @EventHandler public void chat(AsyncPlayerChatEvent e) {
-        PendingInput req=input.get(e.getPlayer().getUniqueId()); if(req==null)return;
+        UUID staffId = e.getPlayer().getUniqueId();
+        PendingInput req = input.get(staffId);
+        if (req == null) return;
         e.setCancelled(true);
-        if(System.currentTimeMillis()-req.createdAt>30_000L){input.remove(e.getPlayer().getUniqueId());e.getPlayer().sendMessage(color("&cInput timed out."));return;}
-        if(e.getMessage().equalsIgnoreCase("cancel")){input.remove(e.getPlayer().getUniqueId());e.getPlayer().sendMessage(color("&7Cancelled."));return;}
-        input.remove(e.getPlayer().getUniqueId());
-        Player target=Bukkit.getPlayer(req.target); if(target==null){e.getPlayer().sendMessage(color("&cTarget is no longer online."));return;}
-        Bukkit.getScheduler().runTask(plugin,()->apply(e.getPlayer(),req.action,target,req.duration,e.getMessage()));
+        String message = e.getMessage();
+        if (System.currentTimeMillis() - req.createdAt() > 30_000L) {
+            input.remove(staffId, req);
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                Player staff = Bukkit.getPlayer(staffId);
+                if (staff != null) staff.sendMessage(color("&cInput timed out."));
+            });
+            return;
+        }
+        if (message.equalsIgnoreCase("cancel")) {
+            input.remove(staffId, req);
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                Player staff = Bukkit.getPlayer(staffId);
+                if (staff != null) staff.sendMessage(color("&7Cancelled."));
+            });
+            return;
+        }
+        if (!input.remove(staffId, req)) return;
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            Player staff = Bukkit.getPlayer(staffId);
+            if (staff == null || !staff.isOnline()) return;
+            Player target = Bukkit.getPlayer(req.target());
+            if (target == null || !target.isOnline()) {
+                staff.sendMessage(color("&cTarget is no longer online."));
+                return;
+            }
+            apply(staff, req.action(), target, req.duration(), message);
+        });
     }
 
     private List<Player> sortedPlayers(){List<Player> p=new ArrayList<>(Bukkit.getOnlinePlayers());p.sort(Comparator.comparing(Player::getName,String.CASE_INSENSITIVE_ORDER));return p;}
