@@ -21,6 +21,7 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -324,10 +325,19 @@ public final class AdvancedAdminGui implements Listener {
         else if(s==12)showInventoryDialog(p,target,false);
         else if(s==14)showInventoryDialog(p,target,true);
         else if(s==16)p.teleportAsync(target.getLocation());
-        else if(s==28)target.teleportAsync(p.getLocation());
+        else if(s==28) {
+            if (isTargetInPracticeActivity(target)) p.sendMessage(color("&cCannot teleport a player while they are queued or in a match/FFA."));
+            else target.teleportAsync(p.getLocation());
+        }
         else if(s==30) toggleStaffSpectator(p, target);
-        else if(s==32){target.setHealth(target.getMaxHealth());target.setFoodLevel(20);target.setFireTicks(0);}
-        else if(s==34)target.getInventory().clear();
+        else if(s==32) {
+            if (isTargetInPracticeActivity(target)) p.sendMessage(color("&cCannot modify combat health while the player is in a match/FFA."));
+            else { target.setHealth(target.getMaxHealth()); target.setFoodLevel(20); target.setFireTicks(0); }
+        }
+        else if(s==34) {
+            if (isTargetInPracticeActivity(target)) p.sendMessage(color("&cCannot clear inventory while the player is queued or in a match/FFA."));
+            else target.getInventory().clear();
+        }
         else if(s==49)openPlayerManager(p);
     } else if(t.startsWith("inventory-slot:")) {
         String[] parts = t.split(":");
@@ -382,6 +392,31 @@ public final class AdvancedAdminGui implements Listener {
             openBackups(p);
         }
     }
+    }
+
+    private boolean isTargetInPracticeActivity(Player target) {
+        Plugin duels = Bukkit.getPluginManager().getPlugin("VoidFlame-Duels");
+        if (duels == null || !duels.isEnabled()) return false;
+        UUID id = target.getUniqueId();
+        try {
+            Object matchManager = duels.getClass().getMethod("matchManager").invoke(duels);
+            if (invokeBoolean(matchManager, "isInMatch", id)
+                    || invokeBoolean(matchManager, "isDisconnected", id)) return true;
+            Object queueManager = duels.getClass().getMethod("queueManager").invoke(duels);
+            if (invokeBoolean(queueManager, "isQueued", id)) return true;
+            Object ffaManager = duels.getClass().getMethod("ffaManager").invoke(duels);
+            return invokeBoolean(ffaManager, "isInFfa", id);
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            plugin.getLogger().warning("Could not validate whether player " + id
+                    + " is active in Practice; blocking destructive staff actions: " + error.getMessage());
+            return true;
+        }
+    }
+
+    private boolean invokeBoolean(Object target, String methodName, UUID playerId)
+            throws ReflectiveOperationException {
+        Object result = target.getClass().getMethod(methodName, UUID.class).invoke(target, playerId);
+        return Boolean.TRUE.equals(result);
     }
 
     private void toggleStaffSpectator(Player staff, Player target) {
@@ -512,6 +547,11 @@ public final class AdvancedAdminGui implements Listener {
             showInventoryDialog(staff, target, enderChest);
             return;
         }
+        if (isTargetInPracticeActivity(target)) {
+            staff.sendMessage(color("&cInventory editing is disabled while the target is queued or in a match/FFA."));
+            showInventoryDialog(staff, target, enderChest);
+            return;
+        }
         Inventory inventory = enderChest ? target.getEnderChest() : target.getInventory();
         int size = enderChest ? inventory.getSize() : target.getInventory().getStorageContents().length;
         if (slot < 0 || slot >= size) {
@@ -545,6 +585,11 @@ public final class AdvancedAdminGui implements Listener {
         }
         if (staff.getUniqueId().equals(targetId)) {
             staff.sendMessage(color("&cYou cannot edit your own inventory through the staff manager."));
+            return;
+        }
+        if (isTargetInPracticeActivity(target)) {
+            staff.sendMessage(color("&cInventory editing is disabled while the target is queued or in a match/FFA."));
+            showInventoryDialog(staff, target, enderChest);
             return;
         }
         Inventory inventory = enderChest ? target.getEnderChest() : target.getInventory();
