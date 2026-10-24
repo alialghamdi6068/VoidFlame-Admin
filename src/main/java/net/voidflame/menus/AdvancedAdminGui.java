@@ -295,7 +295,7 @@ public final class AdvancedAdminGui implements Listener {
         if (t.startsWith("punish-select:") || t.startsWith("duration:")) { openPunishments(p); return; }
         if (t.startsWith("player-actions:")) { openPlayerManager(p); return; }
         if (t.equals("backups") || t.startsWith("restore:")) { openBackups(p); return; }
-        new AdminMenu(plugin).open(p); return;
+        plugin.adminMenu().open(p); return;
     }
     if (t.equals("punishments")) {
         if(s==10)openPlayerSelect(p,"ban"); else if(s==12)openPlayerSelect(p,"mute"); else if(s==14)openPlayerSelect(p,"warn"); else if(s==16)openPlayerSelect(p,"kick"); else if(s==28)openHistory(p); else if(s==30)openPlayerSelect(p,"unpunish");
