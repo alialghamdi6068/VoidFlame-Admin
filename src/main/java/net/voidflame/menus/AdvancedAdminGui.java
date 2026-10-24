@@ -415,7 +415,9 @@ public final class AdvancedAdminGui implements Listener {
             Object queueManager = duels.getClass().getMethod("queueManager").invoke(duels);
             if (invokeBoolean(queueManager, "isQueued", id)) return true;
             Object ffaManager = duels.getClass().getMethod("ffaManager").invoke(duels);
-            return invokeBoolean(ffaManager, "isInFfa", id);
+            if (invokeBoolean(ffaManager, "isInFfa", id)) return true;
+            Object partyManager = duels.getClass().getMethod("partyManager").invoke(duels);
+            return partyManager.getClass().getMethod("partyOf", UUID.class).invoke(partyManager, id) != null;
         } catch (ReflectiveOperationException | RuntimeException error) {
             plugin.getLogger().warning("Could not validate whether player " + id
                     + " is active in Practice; blocking destructive staff actions: " + error.getMessage());
