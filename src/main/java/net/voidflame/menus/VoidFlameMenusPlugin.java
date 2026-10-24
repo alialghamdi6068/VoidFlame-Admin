@@ -7,6 +7,7 @@ public final class VoidFlameMenusPlugin extends JavaPlugin {
     private AdminAudit audit;
     private PunishmentService punishments;
     private AdvancedAdminGui advancedAdminGui;
+    private AdminMenu adminMenu;
 
     @Override
     public void onEnable() {
@@ -14,13 +15,14 @@ public final class VoidFlameMenusPlugin extends JavaPlugin {
         audit = new AdminAudit(this);
         punishments = new PunishmentService(this);
         advancedAdminGui = new AdvancedAdminGui(this);
+        adminMenu = new AdminMenu(this);
         getServer().getPluginManager().registerEvents(punishments, this);
         getCommand("vfadmin").setExecutor(new AdminCommand(this));
         getCommand("vfadmin").setTabCompleter(new AdminCommand(this));
         getCommand("vfanalytics").setExecutor(new AnalyticsCommand(this));
         getCommand("staff").setExecutor(new StaffCommand(this));
         getCommand("staffgui").setExecutor(new StaffCommand(this));
-        getServer().getPluginManager().registerEvents(new AdminMenu(this), this);
+        getServer().getPluginManager().registerEvents(adminMenu, this);
         getServer().getPluginManager().registerEvents(advancedAdminGui, this);
         staffGui = new StaffGui(this);
         staffGui.onEnable();
@@ -36,6 +38,8 @@ public final class VoidFlameMenusPlugin extends JavaPlugin {
     PunishmentService punishments() { return punishments; }
 
     AdvancedAdminGui advancedAdminGui() { return advancedAdminGui; }
+
+    AdminMenu adminMenu() { return adminMenu; }
 
     StaffGui staffGui() { return staffGui; }
 
