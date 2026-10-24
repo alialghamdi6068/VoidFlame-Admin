@@ -294,6 +294,7 @@ public final class AdvancedAdminGui implements Listener {
     if (s==49) {
         if (t.startsWith("punish-select:") || t.startsWith("duration:")) { openPunishments(p); return; }
         if (t.startsWith("player-actions:")) { openPlayerManager(p); return; }
+        if (t.startsWith("inventory-back:")) { openInventoryFromToken(p, t); return; }
         if (t.equals("backups") || t.startsWith("restore:")) { openBackups(p); return; }
         plugin.adminMenu().open(p); return;
     }
@@ -321,6 +322,22 @@ public final class AdvancedAdminGui implements Listener {
         else if(s==32){target.setHealth(target.getMaxHealth());target.setFoodLevel(20);target.setFireTicks(0);}
         else if(s==34)target.getInventory().clear();
         else if(s==49)openPlayerManager(p);
+    } else if(t.startsWith("inventory-slot:")) {
+        String[] parts = t.split(":");
+        try {
+            if (parts.length != 4) throw new IllegalArgumentException("Invalid inventory selection.");
+            openInventorySlotActions(p, UUID.fromString(parts[1]), Integer.parseInt(parts[2]), parts[3].equalsIgnoreCase("ender"));
+        } catch (IllegalArgumentException error) {
+            p.sendMessage(color("&cInvalid inventory slot selection."));
+        }
+    } else if(t.startsWith("inventory-edit:")) {
+        String[] parts = t.split(":");
+        try {
+            if (parts.length != 4) throw new IllegalArgumentException("Invalid inventory action.");
+            editInventorySlot(p, UUID.fromString(parts[1]), Integer.parseInt(parts[2]), parts[3].equalsIgnoreCase("ender"), s);
+        } catch (IllegalArgumentException error) {
+            p.sendMessage(color("&cInvalid inventory action."));
+        }
     } else if(t.equals("security-control")) {
         handleSecurity(p,s);
     } else if(t.equals("backups")) {
