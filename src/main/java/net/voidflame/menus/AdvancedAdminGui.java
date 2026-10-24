@@ -122,7 +122,9 @@ public final class AdvancedAdminGui implements Listener {
                         action(staffSpectators.containsKey(staff.getUniqueId()) ? "Stop Spectating" : "Spectate",
                                 staffSpectators.containsKey(staff.getUniqueId()) ? "Restore your previous game mode and location."
                                         : "Follow target in spectator mode.",
-                                "/vfadmin advclick " + type + " 30", NamedTextColor.BLUE),
+                                staffSpectators.containsKey(staff.getUniqueId())
+                                        ? "/vfadmin advclick staff-spectate 10" : "/vfadmin advclick " + type + " 30",
+                                NamedTextColor.BLUE),
                         action("Heal", "Restore health and hunger.", "/vfadmin advclick " + type + " 32", NamedTextColor.GREEN),
                         action("Clear Inventory", "Clear the player's inventory.", "/vfadmin advclick " + type + " 34", NamedTextColor.RED),
                         action("Back", "Return to player list.", "/vfadmin advclick player-manager 49", NamedTextColor.GRAY)));
@@ -299,6 +301,10 @@ public final class AdvancedAdminGui implements Listener {
     public void dialogClick(Player p, String t, int s) {
         if (!AdminAccess.hasAdminAccess(p)) { p.sendMessage(color("&cJava staff only.")); return; }
         if (s >= 100 && t.equals("backups")) s -= 100;
+    if (t.equals("staff-spectate")) {
+        if (s == 10) stopStaffSpectating(p);
+        return;
+    }
     if (s==49) {
         if (t.startsWith("punish-select:") || t.startsWith("duration:")) { openPunishments(p); return; }
         if (t.startsWith("player-actions:")) { openPlayerManager(p); return; }
@@ -421,13 +427,9 @@ public final class AdvancedAdminGui implements Listener {
 
     private void toggleStaffSpectator(Player staff, Player target) {
         UUID staffId = staff.getUniqueId();
-        StaffSpectatorSnapshot existing = staffSpectators.remove(staffId);
+        StaffSpectatorSnapshot existing = staffSpectators.get(staffId);
         if (existing != null) {
-            staff.setSpectatorTarget(null);
-            staff.setGameMode(existing.gameMode());
-            staff.teleportAsync(existing.location());
-            staff.sendMessage(color("&aSpectator mode ended. Your previous game mode and location were restored."));
-            plugin.audit(staff.getName(), "STAFF_SPECTATE_STOP");
+            stopStaffSpectating(staff);
             return;
         }
         if (staff.equals(target)) {
@@ -441,6 +443,19 @@ public final class AdvancedAdminGui implements Listener {
         staff.setSpectatorTarget(target);
         staff.sendMessage(color("&bNow spectating &f" + target.getName() + "&b. Use Stop Spectating in the player manager to return."));
         plugin.audit(staff.getName(), "STAFF_SPECTATE_START:" + target.getUniqueId());
+    }
+
+    private void stopStaffSpectating(Player staff) {
+        StaffSpectatorSnapshot existing = staffSpectators.remove(staff.getUniqueId());
+        if (existing == null) {
+            staff.sendMessage(color("&7You are not currently spectating."));
+            return;
+        }
+        staff.setSpectatorTarget(null);
+        staff.setGameMode(existing.gameMode());
+        staff.teleportAsync(existing.location());
+        staff.sendMessage(color("&aSpectator mode ended. Your previous game mode and location were restored."));
+        plugin.audit(staff.getName(), "STAFF_SPECTATE_STOP");
     }
 
     public void restoreAllSpectators() {
