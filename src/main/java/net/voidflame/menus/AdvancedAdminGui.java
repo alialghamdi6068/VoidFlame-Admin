@@ -345,19 +345,23 @@ public final class AdvancedAdminGui implements Listener {
             else target.getInventory().clear();
         }
         else if(s==49)openPlayerManager(p);
+    } else if(t.startsWith("inventory-page:")) {
+        openInventoryPageFromToken(p, t);
     } else if(t.startsWith("inventory-slot:")) {
         String[] parts = t.split(":");
         try {
-            if (parts.length != 4) throw new IllegalArgumentException("Invalid inventory selection.");
-            openInventorySlotActions(p, UUID.fromString(parts[1]), Integer.parseInt(parts[2]), parts[3].equalsIgnoreCase("ender"));
+            if (parts.length != 5) throw new IllegalArgumentException("Invalid inventory selection.");
+            openInventorySlotActions(p, UUID.fromString(parts[1]), Integer.parseInt(parts[2]),
+                    parts[3].equalsIgnoreCase("ender"), Integer.parseInt(parts[4]));
         } catch (IllegalArgumentException error) {
             p.sendMessage(color("&cInvalid inventory slot selection."));
         }
     } else if(t.startsWith("inventory-edit:")) {
         String[] parts = t.split(":");
         try {
-            if (parts.length != 4) throw new IllegalArgumentException("Invalid inventory action.");
-            editInventorySlot(p, UUID.fromString(parts[1]), Integer.parseInt(parts[2]), parts[3].equalsIgnoreCase("ender"), s);
+            if (parts.length != 5) throw new IllegalArgumentException("Invalid inventory action.");
+            editInventorySlot(p, UUID.fromString(parts[1]), Integer.parseInt(parts[2]),
+                    parts[3].equalsIgnoreCase("ender"), s, Integer.parseInt(parts[4]));
         } catch (IllegalArgumentException error) {
             p.sendMessage(color("&cInvalid inventory action."));
         }
