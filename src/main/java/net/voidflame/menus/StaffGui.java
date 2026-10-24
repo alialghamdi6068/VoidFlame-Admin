@@ -338,9 +338,14 @@ public final class StaffGui implements Listener {
         frozen.remove(id);
     }
 
-    @EventHandler public void freezeMove(org.bukkit.event.player.PlayerMoveEvent e){
-        if(!frozen.contains(e.getPlayer().getUniqueId())) return;
-        if(e.getFrom().getX()!=e.getTo().getX() || e.getFrom().getY()!=e.getTo().getY() || e.getFrom().getZ()!=e.getTo().getZ()) e.setTo(e.getFrom());
+    @EventHandler
+    public void freezeMove(org.bukkit.event.player.PlayerMoveEvent event) {
+        if (event.getTo() == null || !frozen.contains(event.getPlayer().getUniqueId())) return;
+        if (event.getFrom().getX() != event.getTo().getX()
+                || event.getFrom().getY() != event.getTo().getY()
+                || event.getFrom().getZ() != event.getTo().getZ()) {
+            event.setTo(event.getFrom());
+        }
     }
 
     private void main(Player p,int s){
