@@ -31,7 +31,7 @@ final class PunishmentService implements Listener {
     boolean execute(Player actor, String[] args) {
         if (args.length > 0 && args[0].equalsIgnoreCase("confirm")) {
             PendingPunishment request = pending.remove(actor.getUniqueId());
-            if (request != null && System.currentTimeMillis() - request.createdAt() > 15_000L) request = null;
+            if (request != null && (System.currentTimeMillis() < request.createdAt() || System.currentTimeMillis() - request.createdAt() > 15_000L)) request = null;
             if (request == null) {
                 actor.sendMessage(color("&cThere is no pending punishment to confirm."));
                 return true;
@@ -196,13 +196,20 @@ final class PunishmentService implements Listener {
         OfflinePlayer target = Bukkit.getOfflinePlayer(args[1]);
         return query("SELECT type,actor_name,reason,created_at,expires_at,active FROM punishments WHERE uuid=? ORDER BY created_at DESC LIMIT 50",
                 target.getUniqueId().toString()).thenAccept(rows -> Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!actor.isOnline()) return;
             actor.sendMessage(color("&5&lVoidFlame Punishment History &7» &f" + args[1]));
             if (rows.isEmpty()) actor.sendMessage(color("&7No punishment history."));
             for (Map<String,Object> row : rows) {
                 actor.sendMessage(color("&8• &d" + row.get("type") + " &7by &f" + row.get("actor_name")
                         + " &8| &7" + row.get("reason") + " &8| &7active=" + row.get("active")));
             }
-        }));
+        })).exceptionally(error -> {
+            plugin.getLogger().warning("Could not load punishment history for " + target.getUniqueId() + ": " + error.getMessage());
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (actor.isOnline()) actor.sendMessage(color("&cCould not load punishment history. Please try again later."));
+            });
+            return null;
+        });
     }
 
     private boolean unpunish(Player actor, String[] args) {
@@ -211,14 +218,33 @@ final class PunishmentService implements Listener {
             return true;
         }
         OfflinePlayer target = Bukkit.getOfflinePlayer(args[1]);
-        hierarchyAllowed(actor, target.getUniqueId()).thenAccept(allowed -> {
-            if (!allowed) { Bukkit.getScheduler().runTask(plugin, () -> actor.sendMessage(color("&cYou cannot modify an equal or higher staff player."))); return; }
-            update("UPDATE punishments SET active=0 WHERE uuid=? AND active=1", target.getUniqueId().toString())
-                    .thenRun(() -> { loadActivePunishments(); Bukkit.getScheduler().runTask(plugin, () -> {
-                        actor.sendMessage(color("&aActive punishments cleared for &f" + args[1]));
-                        plugin.audit(actor.getName(), "UNPUNISH:" + args[1]);
-                    }); });
-        });
+        UUID targetId = target.getUniqueId();
+        hierarchyAllowed(actor, targetId).whenComplete((allowed, hierarchyError) ->
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (!actor.isOnline()) return;
+                    if (hierarchyError != null) {
+                        plugin.getLogger().warning("Could not verify unpunish hierarchy for " + targetId + ": " + hierarchyError.getMessage());
+                        actor.sendMessage(color("&cCould not verify staff hierarchy. No punishment was changed."));
+                        return;
+                    }
+                    if (!Boolean.TRUE.equals(allowed)) {
+                        actor.sendMessage(color("&cYou cannot modify an equal or higher staff player."));
+                        return;
+                    }
+                    update("UPDATE punishments SET active=0 WHERE uuid=? AND active=1", targetId.toString())
+                            .whenComplete((ignored, updateError) -> Bukkit.getScheduler().runTask(plugin, () -> {
+                                if (updateError != null) {
+                                    plugin.getLogger().warning("Could not clear punishments for " + targetId + ": " + updateError.getMessage());
+                                    if (actor.isOnline()) actor.sendMessage(color("&cCould not clear punishments. Please try again later."));
+                                    return;
+                                }
+                                loadActivePunishments();
+                                if (actor.isOnline()) {
+                                    actor.sendMessage(color("&aActive punishments cleared for &f" + args[1]));
+                                    plugin.audit(actor.getName(), "UNPUNISH:" + args[1]);
+                                }
+                            }));
+                }));
         return true;
     }
 
