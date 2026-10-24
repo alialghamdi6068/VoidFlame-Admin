@@ -22,6 +22,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.*;
 import org.bukkit.enchantments.Enchantment;
@@ -325,7 +326,17 @@ public final class StaffGui implements Listener {
         }
     }
 
-    @EventHandler public void quit(PlayerQuitEvent e){targets.entrySet().removeIf(x->x.getValue().equals(e.getPlayer().getUniqueId()));frozen.remove(e.getPlayer().getUniqueId());}
+    @EventHandler
+    public void quit(PlayerQuitEvent event) {
+        UUID id = event.getPlayer().getUniqueId();
+        targets.remove(id);
+        targets.entrySet().removeIf(entry -> entry.getValue().equals(id));
+        pendingSection.remove(id);
+        pending.remove(id);
+        confirmations.remove(id);
+        pendingWorldRemoval.remove(id);
+        frozen.remove(id);
+    }
 
     @EventHandler public void freezeMove(org.bukkit.event.player.PlayerMoveEvent e){
         if(!frozen.contains(e.getPlayer().getUniqueId())) return;
