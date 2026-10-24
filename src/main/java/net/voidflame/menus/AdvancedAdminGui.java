@@ -313,7 +313,7 @@ public final class AdvancedAdminGui implements Listener {
         List<Player> players=sortedPlayers(); if(s>=0&&s<players.size())openPlayerActions(p,players.get(s));
     } else if(t.startsWith("player-actions:")) {
         Player target=Bukkit.getPlayer(UUID.fromString(t.substring("player-actions:".length()))); if(target==null){openPlayerManager(p);return;}
-        if(s==10){p.sendMessage(color("&bCore info for &f"+target.getName()+" &7» &f"+target.getUniqueId()));p.sendMessage(color("&7World: &f"+target.getWorld().getName()+" &7Ping: &f"+target.getPing()));}
+        if(s==10) openCoreInfo(p, target);
         else if(s==12)showInventoryDialog(p,target,false);
         else if(s==14)showInventoryDialog(p,target,true);
         else if(s==16)p.teleportAsync(target.getLocation());
@@ -375,6 +375,43 @@ public final class AdvancedAdminGui implements Listener {
             openBackups(p);
         }
     }
+    }
+
+    private void openCoreInfo(Player staff, Player target) {
+        if (!AdminAccess.hasAdminAccess(staff)) { staff.sendMessage(color("&cNo permission.")); return; }
+        UUID targetId = target.getUniqueId();
+        AdminServices.query("SELECT name,rank,wins,losses,winstreak,best_winstreak,elo,coins,last_join "
+                + "FROM player_profiles WHERE uuid=?", targetId.toString())
+                .whenComplete((rows, error) -> Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (!staff.isOnline()) return;
+                    if (error != null) {
+                        plugin.getLogger().warning("Could not load Core profile for " + targetId + ": " + error.getMessage());
+                        staff.sendMessage(color("&cCore profile data could not be loaded."));
+                        return;
+                    }
+                    List<DialogBody> body = new ArrayList<>();
+                    body.add(DialogBody.plainMessage(Component.text("CORE PLAYER PROFILE", NamedTextColor.AQUA), 300));
+                    body.add(DialogBody.plainMessage(Component.text("Player: " + target.getName()
+                            + " • UUID: " + targetId, NamedTextColor.WHITE), 300));
+                    body.add(DialogBody.plainMessage(Component.text("World: " + target.getWorld().getName()
+                            + " • Ping: " + target.getPing() + " ms", NamedTextColor.GRAY), 300));
+                    if (rows == null || rows.isEmpty()) {
+                        body.add(DialogBody.plainMessage(Component.text("No persistent Core profile exists yet.", NamedTextColor.YELLOW), 300));
+                    } else {
+                        Map<String, Object> row = rows.getFirst();
+                        body.add(DialogBody.plainMessage(Component.text("Rank: " + row.getOrDefault("rank", "player")
+                                + " • Coins: " + row.getOrDefault("coins", 0), NamedTextColor.GOLD), 300));
+                        body.add(DialogBody.plainMessage(Component.text("ELO: " + row.getOrDefault("elo", 1000)
+                                + " • Wins: " + row.getOrDefault("wins", 0)
+                                + " • Losses: " + row.getOrDefault("losses", 0), NamedTextColor.GREEN), 300));
+                        body.add(DialogBody.plainMessage(Component.text("Winstreak: " + row.getOrDefault("winstreak", 0)
+                                + " • Best: " + row.getOrDefault("best_winstreak", 0)
+                                + " • Last join: " + row.getOrDefault("last_join", "unknown"), NamedTextColor.GRAY), 300));
+                    }
+                    showDialog(staff, "Core Player Info", "Persistent player data from VoidFlame-Core.",
+                            List.of(action("Back", "Return to player actions.", "/vfadmin advclick player-actions:" + targetId + " 49", NamedTextColor.GRAY)),
+                            body);
+                }));
     }
 
     private void showInventoryDialog(Player staff, Player target, boolean enderChest) {
