@@ -31,6 +31,7 @@ public final class VoidFlameMenusPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (advancedAdminGui != null) advancedAdminGui.restoreAllSpectators();
         if (staffGui != null) staffGui.onDisable();
         if (audit != null) audit.shutdown();
     }
