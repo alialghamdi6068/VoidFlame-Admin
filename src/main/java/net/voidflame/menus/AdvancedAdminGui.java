@@ -27,6 +27,7 @@ public final class AdvancedAdminGui implements Listener {
     private static final String ROOT = "§8VoidFlame §5• §d";
     private final VoidFlameMenusPlugin plugin;
     private final Map<UUID, PendingInput> input = new ConcurrentHashMap<>();
+    private final Map<UUID, PendingRestore> pendingRestores = new ConcurrentHashMap<>();
 
     public AdvancedAdminGui(VoidFlameMenusPlugin plugin) { this.plugin = plugin; }
 
@@ -151,11 +152,13 @@ public final class AdvancedAdminGui implements Listener {
     }
 
     private void confirmRestore(Player p, Path backup) {
+        if (!AdminAccess.hasAdminAccess(p)) { p.sendMessage(color("&cNo permission.")); return; }
         List<Path> backups = AdminServices.backups();
         int index = backups.indexOf(backup);
         if (index < 0) { p.sendMessage(color("&cBackup is no longer available.")); openBackups(p); return; }
+        pendingRestores.put(p.getUniqueId(), new PendingRestore(backup.toAbsolutePath().normalize(), System.currentTimeMillis()));
         showDialog(p, "Confirm Restore", "Restore " + backup.getFileName()
-                        + "? A safety backup is created first. This may replace current database contents.",
+                        + "? A safety backup is created first. This confirmation expires in 15 seconds.",
                 List.of(action("Confirm Restore", "Proceed with restore.", "/vfadmin advclick restore:" + index + " 20", NamedTextColor.RED),
                         action("Cancel", "Return without changes.", "/vfadmin advclick backups 49", NamedTextColor.GREEN)));
     }
@@ -317,17 +320,35 @@ public final class AdvancedAdminGui implements Listener {
         else {List<Path> bs=AdminServices.backups();if(s>=0&&s<bs.size())confirmRestore(p,bs.get(s));}
     } else if(t.startsWith("restore:")) {
         if (s == 20) {
+            PendingRestore pending = pendingRestores.remove(p.getUniqueId());
+            long now = System.currentTimeMillis();
+            if (pending == null || now < pending.createdAt()
+                    || now - pending.createdAt() > 15_000L) {
+                p.sendMessage(color("&cRestore confirmation expired or missing. Select the backup and confirm again."));
+                openBackups(p);
+                return;
+            }
             try {
                 int index = Integer.parseInt(t.substring("restore:".length()));
                 List<Path> bs = AdminServices.backups();
                 if (index < 0 || index >= bs.size()) { p.sendMessage(color("&cBackup is no longer available.")); openBackups(p); return; }
-                Path backup = bs.get(index);
+                Path backup = bs.get(index).toAbsolutePath().normalize();
+                if (!backup.equals(pending.backup())) {
+                    p.sendMessage(color("&cThe backup list changed. Select the intended backup and confirm again."));
+                    openBackups(p);
+                    return;
+                }
                 AdminServices.restore(backup).whenComplete((v,e2)->Bukkit.getScheduler().runTask(plugin,()->{
+                    if (!p.isOnline()) return;
+                    if (e2 == null) plugin.audit(p.getName(), "CORE_RESTORE:" + backup.getFileName());
                     p.sendMessage(color(e2==null?"&aRestore completed. A safety backup was made first.":"&cRestore failed: "+e2.getMessage()));
                     openBackups(p);
                 }));
             } catch (NumberFormatException ex) { p.sendMessage(color("&cInvalid backup selection.")); openBackups(p); }
-        } else if (s == 24) openBackups(p);
+        } else if (s == 24) {
+            pendingRestores.remove(p.getUniqueId());
+            openBackups(p);
+        }
     }
     }
 
@@ -380,5 +401,6 @@ public final class AdvancedAdminGui implements Listener {
     private long num(List<Map<String,Object>> r){return r.isEmpty()?0:((Number)r.get(0).values().iterator().next()).longValue();}
     private double value(List<Map<String,Object>> r,String k){return r.isEmpty()?0:((Number)r.get(0).getOrDefault(k,0)).doubleValue();}
     private record PendingInput(String action,UUID target,String duration,long createdAt){}
+    private record PendingRestore(Path backup, long createdAt){}
     private record Analytics(double players,double matches,double elo,double wins,double losses,String topKit,String topPlayer){}
 }
