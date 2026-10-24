@@ -413,6 +413,11 @@ public final class AdvancedAdminGui implements Listener {
             openPlayerManager(staff);
             return;
         }
+        if (staff.getUniqueId().equals(targetId)) {
+            staff.sendMessage(color("&cUse your normal inventory to manage your own items."));
+            showInventoryDialog(staff, target, enderChest);
+            return;
+        }
         Inventory inventory = enderChest ? target.getEnderChest() : target.getInventory();
         int size = enderChest ? inventory.getSize() : target.getInventory().getStorageContents().length;
         if (slot < 0 || slot >= size) {
@@ -442,6 +447,10 @@ public final class AdvancedAdminGui implements Listener {
         if (target == null || !target.isOnline()) {
             staff.sendMessage(color("&cThat player is no longer online."));
             openPlayerManager(staff);
+            return;
+        }
+        if (staff.getUniqueId().equals(targetId)) {
+            staff.sendMessage(color("&cYou cannot edit your own inventory through the staff manager."));
             return;
         }
         Inventory inventory = enderChest ? target.getEnderChest() : target.getInventory();
